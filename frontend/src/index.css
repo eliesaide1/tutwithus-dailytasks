@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+/* TutWithUs brand: deep navy + golden yellow (from the logo). */
+@theme {
+  --color-brand-50: #eef3fb;
+  --color-brand-100: #d7e2f5;
+  --color-brand-200: #aec4ea;
+  --color-brand-500: #1d4f9e;
+  --color-brand-600: #0f3d86;
+  --color-brand-700: #0b2f6b;
+  --color-brand-800: #08234f;
+  --color-brand-900: #061a3b;
+  --color-accent-100: #fff4cc;
+  --color-accent-400: #ffd23f;
+  --color-accent-500: #f5bd1f;
+  --color-accent-600: #d9a000;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: #f4f6fa;
+  color: #0f172a;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shared form control look, used by components/ui. */
+@layer components {
+  .field {
+    @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs
+      placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none
+      disabled:bg-slate-50 disabled:text-slate-500;
+  }
+  .label {
+    @apply mb-1 block text-xs font-semibold tracking-wide text-slate-600 uppercase;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-full {
+    padding: 0 !important;
+  }
+}

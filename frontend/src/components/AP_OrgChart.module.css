@@ -1,0 +1,88 @@
+/* Border-based tree connectors (classic nested ul/li technique). */
+.tree,
+.tree ul {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+}
+
+.tree ul {
+  padding-top: 22px;
+}
+
+.tree li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  list-style: none;
+  padding: 22px 6px 0;
+}
+
+/* Horizontal bar halves + vertical drop into each child. */
+.tree li::before,
+.tree li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: 22px;
+  border-top: 2px solid var(--line);
+}
+
+.tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid var(--line);
+}
+
+.tree li:only-child::before,
+.tree li:only-child::after {
+  display: none;
+}
+
+.tree li:only-child {
+  padding-top: 0;
+}
+
+.tree li:first-child::before,
+.tree li:last-child::after {
+  border: 0 none;
+}
+
+.tree li:last-child::before {
+  border-right: 2px solid var(--line);
+  border-radius: 0 6px 0 0;
+}
+
+.tree li:first-child::after {
+  border-radius: 6px 0 0 0;
+}
+
+/* Vertical line from a parent card down to its children's bar. */
+.tree ul::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 22px;
+  border-left: 2px solid var(--line);
+}
+
+/* Root list has no line above it. */
+.tree > li {
+  padding-top: 0;
+}
+
+.tree > li::before,
+.tree > li::after {
+  display: none;
+}
+
+.root {
+  --line: #1d4f9e;
+}
