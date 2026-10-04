@@ -19,7 +19,18 @@ export function createApp() {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", 1);
-  app.use(helmet({ contentSecurityPolicy: config.isProd ? undefined : false, crossOriginResourcePolicy: false }));
+  // The browser uploads attachments straight to object storage, so that bucket's origin
+  // has to be allowed through the Content Security Policy — helmet's default connect-src
+  // is 'self' only, which silently blocks the upload.
+  const storageOrigin = config.spaces ? `https://${config.spaces.bucket}.${new URL(config.spaces.endpoint).host}` : null;
+  const csp = {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "connect-src": ["'self'", ...(storageOrigin ? [storageOrigin] : [])],
+      "img-src": ["'self'", "data:", "blob:", ...(storageOrigin ? [storageOrigin] : [])],
+    },
+  };
+  app.use(helmet({ contentSecurityPolicy: config.isProd ? csp : false, crossOriginResourcePolicy: false }));
   app.use(express.json({ limit: "1mb" }));
   app.use(cookieParser());
 
