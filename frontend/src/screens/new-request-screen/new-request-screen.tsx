@@ -1,14 +1,15 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Plus, X } from "lucide-react";
 import { PRIORITIES, PRIORITY_LABELS, REQUEST_TYPES, REQUEST_TYPE_LABELS, TASK_KINDS } from "@/Shared/constants";
-import { CreateRequest } from "@/Shared/SharedService";
+import { CreateRequest, UploadAttachment } from "@/Shared/SharedService";
 import { TASK_KEYS, useProjectTeam } from "@/hooks/useTasks";
 import { useMe } from "@/hooks/useAuth";
 import { useApiMutation } from "@/hooks/useApiMutation";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useLookups } from "@/hooks/useLookups";
 import { AP_Button } from "@/components/AP_Button";
+import { AP_Attachments } from "@/components/AP_Attachments";
 import { AP_Card } from "@/components/AP_Card";
 import { AP_Field } from "@/components/AP_Field";
 import { AP_Input } from "@/components/AP_Input";
@@ -32,17 +33,32 @@ export default function NewRequestScreen() {
   const lead = team.data?.lead ?? null;
   const [rows, setRows] = useState<number[]>([0]);
   const [nextKey, setNextKey] = useState(1);
+  // Files picked per task row. The tasks don't exist yet, so these upload after create.
+  const [files, setFiles] = useState<Record<number, File[]>>({});
 
+  const [uploading, setUploading] = useState(false);
   const create = useApiMutation((body: Record<string, unknown>) => CreateRequest(body), {
     invalidate: [...TASK_KEYS],
-    onSuccess: ({ number }) => navigate(`/tasks/${number}`),
+    onSuccess: async ({ number, tasks }) => {
+      // Tasks come back in submitted order, so row N's files belong to task N.
+      const queued = submittedRows.current.map((key, i) => [tasks?.[i]?.id, files[key] ?? []] as const).filter(([id, f]) => id && f.length);
+      if (queued.length) {
+        setUploading(true);
+        for (const [id, list] of queued) for (const file of list) await UploadAttachment(id!, file).catch(() => {});
+        setUploading(false);
+      }
+      navigate(`/tasks/${number}`);
+    },
   });
+  // Which rows actually produced a task, in order — set at submit time.
+  const submittedRows = useRef<number[]>([]);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const get = (k: string) => String(fd.get(k) ?? "");
     // Rows without a task title are ignored.
+    submittedRows.current = rows.filter((key) => get(`t${key}_title`).trim());
     const tasks = rows
       .map((key) => ({
         title: get(`t${key}_title`).trim(),
@@ -187,6 +203,15 @@ export default function NewRequestScreen() {
                     <AP_Field label="Planned week (any day)" className="sm:col-span-3">
                       <AP_Input name={`t${key}_week`} type="date" />
                     </AP_Field>
+                    <div className="sm:col-span-6">
+                      <p className="mb-1.5 text-xs font-medium text-slate-500">Attachments</p>
+                      <AP_Attachments
+                        taskId={null}
+                        canEdit
+                        pending={files[key] ?? []}
+                        onPendingChange={(list) => setFiles((f) => ({ ...f, [key]: list }))}
+                      />
+                    </div>
                     {rows.length > 1 && (
                       <button
                         type="button"
@@ -204,8 +229,8 @@ export default function NewRequestScreen() {
             </div>
 
             <div className="flex justify-end">
-              <AP_Button type="submit" disabled={create.isPending}>
-                {create.isPending ? "Creating…" : "Create request"}
+              <AP_Button type="submit" disabled={create.isPending || uploading}>
+                {uploading ? "Uploading files…" : create.isPending ? "Creating…" : "Create request"}
               </AP_Button>
             </div>
           </form>

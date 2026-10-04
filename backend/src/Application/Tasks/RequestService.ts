@@ -145,7 +145,9 @@ export async function createRequest(user: UserDoc, input: unknown) {
   for (const t of created) {
     await notify({ user: t.assignee, actor: user.id, title: `New task assigned: ${t.title}`, body: `#${number} ${request.title}`, link });
   }
-  return { number };
+  // Task ids come back in the order they were submitted, so the client can attach the
+  // files it collected per row — the tasks only exist now.
+  return { number, tasks: created.map((t) => ({ id: String(t._id), title: t.title })) };
 }
 
 // ── Detail ──

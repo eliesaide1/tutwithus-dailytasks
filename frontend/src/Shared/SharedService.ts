@@ -230,7 +230,7 @@ export const GetTaskTree = (params: { person: string; show: string; project: str
 
 export const GetRequest = (number: string | number) => get<RequestResponse>(`/tasks/${number}`);
 
-export const CreateRequest = (request: Body) => post<{ number: number }>("/tasks", request);
+export const CreateRequest = (request: Body) => post<{ number: number; tasks: { id: string; title: string }[] }>("/tasks", request);
 
 export const UpdateRequest = (number: number, request: Body) => patch<Ok>(`/tasks/${number}`, request);
 
