@@ -68,6 +68,11 @@ first (a red check marks it live), then filled in, then closed with an action. A
 stays locked until the one before it is done — enforced on the server, not just hidden in
 the UI.
 
+Every expandable row carries an arrow: pointing right when collapsed, rotating down when
+open. It is driven by a **named** group (`group/req` + `group-open/req:rotate-90`) rather
+than a bare `group-open:`, which would match any open ancestor and leave every arrow in a
+nested tree pointing down.
+
 | Phase | Fields | Actions |
 |---|---|---|
 | **Acceptance** | *Accept this as* (New request / Bug / Support) and *Type* (Enhancement / Support / Fix / Content / Other). Accept stays disabled until both are set | Accept · Cancel |
