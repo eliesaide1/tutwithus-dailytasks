@@ -1,6 +1,10 @@
 // The three-phase workflow a request moves through.
 //
-//   Acceptance  -> Development analysis -> Solution development
+//   Acceptance -> Planning -> Delivery
+//
+// The names describe what each step decides, not who does the work, so the same workflow
+// reads sensibly in every department: preparation/execution is analysis/development in
+// Development, research/production in Marketing, qualifying/pitching in Sales.
 //
 // Each phase is activated first, then filled in, then closed with an action. A phase
 // cannot be touched until the one before it is done, so the order is enforced here
@@ -20,13 +24,13 @@ import { findRequest } from "./TaskMappers";
 export const PHASES = ["acceptance", "analysis", "development"] as const;
 export type PhaseName = (typeof PHASES)[number];
 
-export const ACCEPT_AS = ["NEW_REQUEST", "BUG", "SUPPORT"] as const;
-export const REQUEST_TYPES_PHASE = ["ENHANCEMENT", "SUPPORT", "FIX", "CONTENT", "OTHER"] as const;
+export const ACCEPT_AS = ["NEW_REQUEST", "ISSUE", "SUPPORT"] as const;
+export const REQUEST_TYPES_PHASE = ["IMPROVEMENT", "SUPPORT", "FIX", "CONTENT", "OTHER"] as const;
 
 const PHASE_LABELS: Record<PhaseName, string> = {
   acceptance: "Acceptance",
-  analysis: "Development analysis",
-  development: "Solution development",
+  analysis: "Planning",
+  development: "Delivery",
 };
 
 const acceptanceInput = z.object({
@@ -36,7 +40,7 @@ const acceptanceInput = z.object({
 
 const analysisInput = z.object({
   deliveryDate: zDate,
-  // Hours, not days: the UI shows the day equivalent at 8 h per day.
+  // Preparation and execution, in hours. The UI shows the day equivalent at 8 h/day.
   analysisHours: z.coerce.number().min(0).max(2000).nullable().optional(),
   developmentHours: z.coerce.number().min(0).max(2000).nullable().optional(),
 });
@@ -111,7 +115,7 @@ export async function update(user: UserDoc, numberParam: string, phase: PhaseNam
  * Closes a phase. Which actions are allowed depends on the phase:
  *   acceptance   accept | cancel
  *   analysis     finalize | cancel
- *   development  launch-qa | finalize | cancel
+ *   development  review | finalize | cancel
  */
 export async function act(user: UserDoc, numberParam: string, phase: PhaseName, action: string) {
   const r = await load(user, numberParam, phase);
@@ -149,15 +153,15 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
     }
     r.status = "IN_PROGRESS";
     await r.save();
-    await note(r, `accepted #${r.number} as ${acceptAs === "BUG" ? "a bug" : "a new request"} (${requestType.toLowerCase()})`, user);
+    await note(r, `accepted #${r.number} as ${acceptAs === "ISSUE" ? "an issue" : "a new request"} (${requestType.toLowerCase()})`, user);
     return { ok: true };
   }
 
   if (phase === "analysis") {
-    if (action !== "finalize") throw badRequest("Development analysis can only be finalized or cancelled.");
+    if (action !== "finalize") throw badRequest("Planning can only be finalized or cancelled.");
     const a = r.phases.analysis;
     if (!a.deliveryDate) throw badRequest("Set the delivery date before finalizing.");
-    if (a.analysisHours == null || a.developmentHours == null) throw badRequest("Set the analysis and development hours before finalizing.");
+    if (a.analysisHours == null || a.developmentHours == null) throw badRequest("Set the preparation and execution hours before finalizing.");
     a.status = "FINALIZED";
     stamp();
     if (!r.dueDate) r.dueDate = a.deliveryDate;
@@ -167,19 +171,19 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
   }
 
   // development
-  if (action === "launch-qa") {
-    r.phases.development.status = "QA";
-    r.phases.development.qaAt = new Date();
+  if (action === "review") {
+    r.phases.development.status = "REVIEW";
+    r.phases.development.reviewAt = new Date();
     await r.save();
-    await note(r, `launched QA on #${r.number}`, user);
+    await note(r, `sent #${r.number} for review`, user);
     return { ok: true };
   }
-  if (action !== "finalize") throw badRequest("Solution development can be sent to QA, finalized or cancelled.");
+  if (action !== "finalize") throw badRequest("Delivery can be sent for review, finalized or cancelled.");
   r.phases.development.status = "FINALIZED";
   stamp();
   r.status = "DONE";
   r.closedAt = new Date();
   await r.save();
-  await note(r, `finalized #${r.number} — live`, user);
+  await note(r, `finalized #${r.number} — delivered`, user);
   return { ok: true, closed: true };
 }

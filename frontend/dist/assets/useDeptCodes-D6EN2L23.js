@@ -1,1 +1,0 @@
-import{u as r}from"./useLookups-B-YEjfTE.js";function f(){const{projects:c}=r(),s=e=>e?c.filter(o=>o.department===e&&!o.archived).map(o=>o.code):[];return{codesOf:s,labelOf:(e,o)=>{const t=s(o);return t.length?`${e} (${t.join(", ")})`:e}}}export{f as u};

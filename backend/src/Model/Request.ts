@@ -3,15 +3,15 @@ import { baseOptions, defineModel } from "./base";
 
 const { ObjectId } = Schema.Types;
 
-// A request moves through three phases. Each is activated, filled in, then closed with
+// A request moves through three phases, named so they read the same in every department. Each is activated, filled in, then closed with
 // an action (accept / finalize) or cancelled. A phase only opens once the one before it
 // is done — except Support, which finishes at acceptance (handled by email, client side).
 const acceptanceSchema = new Schema(
   {
     activated: { type: Boolean, default: false },
     // What the request is being accepted as, and the type it is filed under.
-    acceptAs: { type: String, enum: ["NEW_REQUEST", "BUG", "SUPPORT", null], default: null },
-    requestType: { type: String, enum: ["ENHANCEMENT", "SUPPORT", "FIX", "CONTENT", "OTHER", null], default: null },
+    acceptAs: { type: String, enum: ["NEW_REQUEST", "ISSUE", "SUPPORT", null], default: null },
+    requestType: { type: String, enum: ["IMPROVEMENT", "SUPPORT", "FIX", "CONTENT", "OTHER", null], default: null },
     status: { type: String, enum: ["PENDING", "ACCEPTED", "CANCELLED"], default: "PENDING" },
     actedBy: { type: ObjectId, ref: "User", default: null },
     actedAt: Date,
@@ -35,8 +35,8 @@ const analysisSchema = new Schema(
 const developmentSchema = new Schema(
   {
     activated: { type: Boolean, default: false },
-    status: { type: String, enum: ["PENDING", "QA", "FINALIZED", "CANCELLED"], default: "PENDING" },
-    qaAt: Date,
+    status: { type: String, enum: ["PENDING", "REVIEW", "FINALIZED", "CANCELLED"], default: "PENDING" },
+    reviewAt: Date,
     actedBy: { type: ObjectId, ref: "User", default: null },
     actedAt: Date,
   },

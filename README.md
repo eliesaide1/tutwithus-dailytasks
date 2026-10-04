@@ -75,9 +75,22 @@ nested tree pointing down.
 
 | Phase | Fields | Actions |
 |---|---|---|
-| **Acceptance** | *Accept this as* (New request / Bug / Support) and *Type* (Enhancement / Support / Fix / Content / Other). Accept stays disabled until both are set | Accept · Cancel |
-| **Development analysis** | Opening date (today, fixed), delivery date, analysis hours and development hours — shown as days at 8 h = 1 day | Finalize · Cancel |
-| **Solution development** | — | Launch QA · Finalize · Cancel |
+| **Acceptance** | *Accept this as* (New request / Issue / Support) and *Type* (Improvement / Support / Fix / Content / Other). Accept stays disabled until both are set | Accept · Cancel |
+| **Planning** | Opening date (today, fixed), delivery date, preparation hours and execution hours — shown as days at 8 h = 1 day | Finalize · Cancel |
+| **Delivery** | — | Review · Finalize · Cancel |
+
+The phases are named for **what each step decides**, not who does the work, so one
+workflow fits every department:
+
+| Department | Preparation | Execution | Review |
+|---|---|---|---|
+| Development & Platform | analysis | building | QA |
+| Marketing & Social Media | research, concept | producing the content | approval before publishing |
+| Tutors & Clients | assessing the case | resolving it | follow-up confirmation |
+| Sales / PMO | qualifying, preparing | pitching, negotiating | client sign-off |
+
+One shared vocabulary also means "what is sitting in Planning?" is answerable across the
+whole company, which per-department phase names would make impossible.
 
 The request's own status follows along: **In progress** when accepted, **Done** when
 finalized, **Cancelled** from a cancel at any phase.

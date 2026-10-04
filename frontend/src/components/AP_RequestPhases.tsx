@@ -12,12 +12,12 @@ import { AP_Select } from "./AP_Select";
 
 const ACCEPT_AS: { value: AcceptAs; label: string }[] = [
   { value: "NEW_REQUEST", label: "New request" },
-  { value: "BUG", label: "Bug" },
+  { value: "ISSUE", label: "Issue" },
   { value: "SUPPORT", label: "Support" },
 ];
 
 const TYPES: { value: PhaseRequestType; label: string }[] = [
-  { value: "ENHANCEMENT", label: "Enhancement" },
+  { value: "IMPROVEMENT", label: "Improvement" },
   { value: "SUPPORT", label: "Support" },
   { value: "FIX", label: "Fix" },
   { value: "CONTENT", label: "Content" },
@@ -90,8 +90,10 @@ function PhaseShell({
 }
 
 /**
- * The three phases a request moves through, shown under it in the tree.
- * Each is activated, filled in, then closed with an action.
+ * The three phases a request moves through, shown under it in the tree:
+ * Acceptance -> Planning -> Delivery. Each is activated, filled in, then closed with an
+ * action. The names describe what the step decides, so they read the same whether the
+ * work is software, marketing or client support.
  */
 export function AP_RequestPhases({ number, phases, canManage }: { number: number; phases: RequestPhases; canManage: boolean }) {
   const [acceptAs, setAcceptAs] = useState<string>(phases.acceptance.acceptAs ?? "");
@@ -189,9 +191,9 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
         )}
       </PhaseShell>
 
-      {/* 2 — Development analysis */}
+      {/* 2 — Planning */}
       <PhaseShell
-        title="Development analysis"
+        title="Planning"
         step={2}
         open={an.open}
         activated={an.activated}
@@ -202,8 +204,8 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
       >
         {an.status === "FINALIZED" ? (
           <p className="text-xs text-slate-600">
-            Delivery <strong>{an.deliveryDate ? formatShortDate(an.deliveryDate) : "—"}</strong> · analysis <strong>{an.analysisHours} h</strong> ({inDays(an.analysisHours)}) ·
-            development <strong>{an.developmentHours} h</strong> ({inDays(an.developmentHours)})
+            Delivery <strong>{an.deliveryDate ? formatShortDate(an.deliveryDate) : "—"}</strong> · preparation <strong>{an.analysisHours} h</strong> ({inDays(an.analysisHours)}) ·
+            execution <strong>{an.developmentHours} h</strong> ({inDays(an.developmentHours)})
           </p>
         ) : (
           <>
@@ -215,10 +217,10 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
               <AP_Field label="Deliver on">
                 <AP_Input type="date" value={delivery} disabled={!an.activated} onChange={(e) => setDelivery(e.target.value)} />
               </AP_Field>
-              <AP_Field label="Analysis (h)" hint={inDays(Number(analysisH) || null) ?? undefined}>
+              <AP_Field label="Preparation (h)" hint={inDays(Number(analysisH) || null) ?? undefined}>
                 <AP_Input type="number" min={0} step={0.5} value={analysisH} disabled={!an.activated} onChange={(e) => setAnalysisH(e.target.value)} />
               </AP_Field>
-              <AP_Field label="Development (h)" hint={inDays(Number(devH) || null) ?? undefined}>
+              <AP_Field label="Execution (h)" hint={inDays(Number(devH) || null) ?? undefined}>
                 <AP_Input type="number" min={0} step={0.5} value={devH} disabled={!an.activated} onChange={(e) => setDevH(e.target.value)} />
               </AP_Field>
             </div>
@@ -254,9 +256,9 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
         )}
       </PhaseShell>
 
-      {/* 3 — Solution development */}
+      {/* 3 — Delivery */}
       <PhaseShell
-        title="Solution development"
+        title="Delivery"
         step={3}
         open={d.open}
         activated={d.activated}
@@ -266,21 +268,21 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
         busy={busy}
       >
         {d.status === "FINALIZED" ? (
-          <p className="text-xs text-emerald-700">Finalized — live.</p>
+          <p className="text-xs text-emerald-700">Finalized — delivered.</p>
         ) : (
           <>
             <p className="text-xs text-slate-500">
-              {d.status === "QA" ? `In QA since ${d.qaAt ? formatShortDate(d.qaAt) : "—"}.` : "Build the solution, send it to QA, then finalize when it is live."}
+              {d.status === "REVIEW" ? `Under review since ${d.reviewAt ? formatShortDate(d.reviewAt) : "—"}.` : "Do the work, send it for review, then finalize when it is delivered."}
             </p>
             <div className="mt-3 flex flex-wrap justify-end gap-2">
               <AP_Button
                 type="button"
                 size="sm"
                 variant="secondary"
-                disabled={!d.activated || d.status === "QA" || busy}
-                onClick={() => run.mutate({ phase: "development", action: "launch-qa" })}
+                disabled={!d.activated || d.status === "REVIEW" || busy}
+                onClick={() => run.mutate({ phase: "development", action: "review" })}
               >
-                Launch QA
+                Review
               </AP_Button>
               <AP_Button type="button" size="sm" disabled={!d.activated || busy} onClick={() => run.mutate({ phase: "development", action: "finalize" })}>
                 Finalize

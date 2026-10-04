@@ -1,0 +1,1 @@
+import{g as u,a$ as a}from"./index-DYnbBtJY.js";const r=["lookups"];function p(){const s=u({queryKey:r,queryFn:a,staleTime:6e4}),e=s.data??{users:[],departments:[],projects:[]},t=new Map(e.users.map(o=>[o.id,o]));return{...s,...e,userById:t}}export{r as l,p as u};

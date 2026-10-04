@@ -135,7 +135,7 @@ export function serializePhases(r: Lean) {
   const development = {
     activated: !!d.activated,
     status: (d.status as string) ?? "PENDING",
-    qaAt: d.qaAt ?? null,
+    reviewAt: d.reviewAt ?? null,
     actedAt: d.actedAt ?? null,
   };
   // Support closes at acceptance, so nothing downstream opens for it.

@@ -144,9 +144,9 @@ export type Attachment = {
 // ── The three-phase workflow on a request ──
 
 export type PhaseName = "acceptance" | "analysis" | "development";
-export type PhaseAction = "accept" | "finalize" | "launch-qa" | "cancel";
-export type AcceptAs = "NEW_REQUEST" | "BUG" | "SUPPORT";
-export type PhaseRequestType = "ENHANCEMENT" | "SUPPORT" | "FIX" | "CONTENT" | "OTHER";
+export type PhaseAction = "accept" | "finalize" | "review" | "cancel";
+export type AcceptAs = "NEW_REQUEST" | "ISSUE" | "SUPPORT";
+export type PhaseRequestType = "IMPROVEMENT" | "SUPPORT" | "FIX" | "CONTENT" | "OTHER";
 
 type PhaseBase = {
   activated: boolean;
@@ -168,8 +168,8 @@ export type RequestPhases = {
     developmentHours: number | null;
   };
   development: PhaseBase & {
-    status: "PENDING" | "QA" | "FINALIZED" | "CANCELLED";
-    qaAt: string | null;
+    status: "PENDING" | "REVIEW" | "FINALIZED" | "CANCELLED";
+    reviewAt: string | null;
   };
 };
 
