@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router";
 import type { ReactNode } from "react";
-import { Briefcase, ChevronRight, CircleDot, Hourglass, Plus, Workflow } from "lucide-react";
+import { Briefcase, CircleDot, Hourglass, Plus, Workflow } from "lucide-react";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/Shared/constants";
 import type { TreeRequest } from "@/Shared/Types";
 import { useTaskTree } from "@/hooks/useTasks";
@@ -16,6 +16,7 @@ import { AP_QueryState } from "@/components/AP_QueryState";
 import { AP_Select } from "@/components/AP_Select";
 import { AP_RequestTreeNode } from "@/components/AP_RequestTreeNode";
 import { AP_TaskLegend } from "@/components/AP_TaskLegend";
+import { AP_Chevron } from "@/components/AP_Chevron";
 import { AP_TreeToggle } from "@/components/AP_TreeToggle";
 
 type View = "project" | "person" | "status";
@@ -185,7 +186,7 @@ function TreeNode({ icon, label, open = false, children }: { icon: ReactNode; la
   return (
     <details open={open} className="group mb-1">
       <summary className="flex cursor-pointer list-none items-center gap-2 py-0.5 font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
-        <ChevronRight className="size-3.5 shrink-0 text-slate-400 transition-transform duration-150 group-open:rotate-90" aria-hidden />
+        <AP_Chevron />
         {icon}
         {label}
       </summary>
@@ -210,7 +211,7 @@ function GroupTree({ requests, view, now, canManage }: { requests: (TreeRequest 
         <li key={g.key} className="py-0.5">
           <details open className="group">
             <summary className="flex cursor-pointer list-none items-center gap-2 py-0.5 font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
-              <ChevronRight className="size-3.5 shrink-0 text-slate-400 transition-transform duration-150 group-open:rotate-90" aria-hidden />
+              <AP_Chevron />
               {g.avatar ? (
                 <AP_Avatar name={g.avatar.name} src={g.avatar.src} size={20} />
               ) : view === "status" ? (
