@@ -1,0 +1,1 @@
+import{j as o}from"./index-Dr84X9re.js";import{A as r}from"./AP_Badge-2v04DYiT.js";import{f as s}from"./constants-6cxhPjQ3.js";const a={TODO:"slate",IN_PROGRESS:"blue",BLOCKED:"red",DONE:"green"};function S({status:e}){const t=e;return o.jsx(r,{tone:a[t]??"slate",children:s[t]??e})}export{S as A};

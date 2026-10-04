@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# The frontend build is committed so deploys don't have to run Vite (see README).
+!frontend/dist/
 *.tsbuildinfo
 .env
 .env.*

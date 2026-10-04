@@ -152,14 +152,22 @@ Root directory `backend`, then:
 
 ```bash
 # Build
-npm ci --include=dev && npm run build && cd ../frontend && npm ci --include=dev && npm run build
+npm ci --include=dev && npm run build
 # Start
 npm start
 ```
 
 `--include=dev` is not optional: with `NODE_ENV=production` set, npm skips
-devDependencies, and `esbuild`, `tsx`, `vite` and `typescript` all live there — the build
-fails without it.
+devDependencies, and `esbuild` and `tsx` live there — the build fails without it.
+
+**`frontend/dist` is committed**, so the deploy does not run Vite. That keeps the build
+small and fast, and keeps it off a 512 MB instance where the frontend build is the step
+most likely to be killed for memory.
+
+The cost is that the build output has to be refreshed by hand. **After any frontend
+change, run `npm run build` in `frontend/` and commit `dist/` along with the source** —
+otherwise the deployed app silently keeps serving the previous UI while the source says
+otherwise.
 
 Other notes:
 

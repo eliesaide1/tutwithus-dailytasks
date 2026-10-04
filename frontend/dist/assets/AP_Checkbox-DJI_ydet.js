@@ -1,0 +1,1 @@
+import{j as e}from"./index-Dr84X9re.js";function n({label:t,...s}){return e.jsxs("label",{className:"inline-flex items-center gap-2 text-sm text-slate-700",children:[e.jsx("input",{type:"checkbox",className:"size-4 rounded border-slate-300 accent-brand-700",...s}),t]})}export{n as A};
