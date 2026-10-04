@@ -184,9 +184,9 @@ export default function TasksScreen() {
 /** One top-level node of the tree (waiting prerequisite, waiting info, total). */
 function TreeNode({ icon, label, open = false, children }: { icon: ReactNode; label: ReactNode; open?: boolean; children: ReactNode }) {
   return (
-    <details open={open} className="group mb-1">
+    <details open={open} className="group/node mb-1">
       <summary className="flex cursor-pointer list-none items-center gap-2 py-0.5 font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
-        <AP_Chevron />
+        <AP_Chevron className="group-open/node:rotate-90" />
         {icon}
         {label}
       </summary>
@@ -209,9 +209,9 @@ function GroupTree({ requests, view, now, canManage }: { requests: (TreeRequest 
     <ul className="mt-1 ml-2 border-l border-dotted border-slate-300 pl-4">
       {groupRequests(requests, view).map((g) => (
         <li key={g.key} className="py-0.5">
-          <details open className="group">
+          <details open className="group/grp">
             <summary className="flex cursor-pointer list-none items-center gap-2 py-0.5 font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
-              <AP_Chevron />
+              <AP_Chevron className="group-open/grp:rotate-90" />
               {g.avatar ? (
                 <AP_Avatar name={g.avatar.name} src={g.avatar.src} size={20} />
               ) : view === "status" ? (

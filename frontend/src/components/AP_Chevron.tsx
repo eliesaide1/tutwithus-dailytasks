@@ -1,12 +1,12 @@
 /**
  * The open/closed arrow on a <details> row: points right when collapsed, down when open.
  *
- * Written as an inline SVG rather than a lucide icon so its size is fixed by the width
- * and height attributes — a flex row can't stretch it into a line if a utility class
- * fails to apply.
+ * Written as an inline SVG so its geometry comes from attributes, not utility classes.
  *
- * Put `className="group"` on the <details> and this follows its state on its own, with
- * no React state to keep in sync.
+ * The rotation class is passed in rather than baked in, and must be a *named* group
+ * (`group-open/req:rotate-90`). A bare `group-open:` matches any open `.group` ancestor,
+ * so in a nested tree every arrow inherits its parents' open state and points down even
+ * when its own row is shut.
  */
 export function AP_Chevron({ className = "" }: { className?: string }) {
   return (
@@ -20,7 +20,7 @@ export function AP_Chevron({ className = "" }: { className?: string }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className={`shrink-0 text-slate-400 transition-[rotate] duration-150 group-open:rotate-90 ${className}`}
+      className={`shrink-0 text-slate-400 transition-[rotate] duration-150 ${className}`}
     >
       <path d="m9 18 6-6-6-6" />
     </svg>

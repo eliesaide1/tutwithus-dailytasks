@@ -31,9 +31,9 @@ export function AP_RequestTreeNode({
   const closed = r.status === "DONE" || r.status === "CANCELLED";
   return (
     <li className="py-0.5">
-      <details className="group">
+      <details className="group/req">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1 rounded-md px-1 py-1 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-          <AP_Chevron />
+          <AP_Chevron className="group-open/req:rotate-90" />
           <FolderOpen className={cn("size-4", r.status === "CANCELLED" ? "text-slate-400" : "text-emerald-600")} />
           <AP_TypeIcon type={r.type} />
           <Link
