@@ -7,6 +7,8 @@
 import type {
   AccountUser,
   Attachment,
+  PhaseAction as PhaseActionName,
+  PhaseName,
   ActivityRow,
   AdminUser,
   Announcement,
@@ -237,6 +239,18 @@ export const UpdateRequest = (number: number, request: Body) => patch<Ok>(`/task
 export const SetRequestStatus = (number: number | string, status: string) => post<Ok>(`/tasks/${number}/status`, { status });
 
 export const DeleteRequest = (number: number) => del<Ok>(`/tasks/${number}`);
+
+// ── Request phases (acceptance -> development analysis -> solution development) ──
+
+/** Opens a phase for editing. Its fields and buttons stay disabled until then. */
+export const ActivatePhase = (number: number, phase: PhaseName) => post<Ok>(`/tasks/${number}/phases/${phase}/activate`);
+
+/** Saves a phase's fields without closing it. */
+export const UpdatePhase = (number: number, phase: PhaseName, body: Body) => patch<Ok>(`/tasks/${number}/phases/${phase}`, body);
+
+/** Closes a phase: accept | finalize | launch-qa | cancel. */
+export const PhaseAction = (number: number, phase: PhaseName, action: PhaseActionName) =>
+  post<Ok>(`/tasks/${number}/phases/${phase}/${action}`);
 
 export const AddTask = (number: number, task: Body) => post<{ id: string }>(`/tasks/${number}/tasks`, task);
 

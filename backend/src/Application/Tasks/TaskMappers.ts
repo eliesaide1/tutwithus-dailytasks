@@ -111,6 +111,42 @@ export function serializeTask(t: Lean, viewer?: Viewer) {
   };
 }
 
+/** Phase state for the client: what is filled in, what is open, what has been done. */
+export function serializePhases(r: Lean) {
+  const p = (r.phases ?? {}) as Lean;
+  const a = (p.acceptance ?? {}) as Lean;
+  const an = (p.analysis ?? {}) as Lean;
+  const d = (p.development ?? {}) as Lean;
+  const acceptance = {
+    activated: !!a.activated,
+    status: (a.status as string) ?? "PENDING",
+    acceptAs: (a.acceptAs as string) ?? null,
+    requestType: (a.requestType as string) ?? null,
+    actedAt: a.actedAt ?? null,
+  };
+  const analysis = {
+    activated: !!an.activated,
+    status: (an.status as string) ?? "PENDING",
+    deliveryDate: an.deliveryDate ?? null,
+    analysisHours: (an.analysisHours as number) ?? null,
+    developmentHours: (an.developmentHours as number) ?? null,
+    actedAt: an.actedAt ?? null,
+  };
+  const development = {
+    activated: !!d.activated,
+    status: (d.status as string) ?? "PENDING",
+    qaAt: d.qaAt ?? null,
+    actedAt: d.actedAt ?? null,
+  };
+  // Support closes at acceptance, so nothing downstream opens for it.
+  const movesOn = acceptance.status === "ACCEPTED" && acceptance.acceptAs !== "SUPPORT";
+  return {
+    acceptance: { ...acceptance, open: true },
+    analysis: { ...analysis, open: movesOn },
+    development: { ...development, open: movesOn && analysis.status === "FINALIZED" },
+  };
+}
+
 export function serializeRequest(r: Lean, viewer?: Viewer) {
   return {
     id: String(r._id),
@@ -126,6 +162,7 @@ export function serializeRequest(r: Lean, viewer?: Viewer) {
     project: projectLite(r.project),
     owner: userLite(r.owner),
     createdBy: userLite(r.createdBy),
+    phases: serializePhases(r),
     canEdit: viewer ? canEditRequest(viewer, { owner: idOf(r.owner), createdBy: idOf(r.createdBy) }) : undefined,
   };
 }

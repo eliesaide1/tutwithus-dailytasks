@@ -104,6 +104,7 @@ export type RequestSummary = {
   createdAt: string;
   project: ProjectLite;
   owner: UserLite | null;
+  phases: RequestPhases;
 };
 
 export type TreeRequest = RequestSummary & {
@@ -138,6 +139,38 @@ export type Attachment = {
   size: number;
   uploadedBy: string | null;
   uploadedAt: string | null;
+};
+
+// ── The three-phase workflow on a request ──
+
+export type PhaseName = "acceptance" | "analysis" | "development";
+export type PhaseAction = "accept" | "finalize" | "launch-qa" | "cancel";
+export type AcceptAs = "NEW_REQUEST" | "BUG" | "SUPPORT";
+export type PhaseRequestType = "ENHANCEMENT" | "SUPPORT" | "FIX" | "CONTENT" | "OTHER";
+
+type PhaseBase = {
+  activated: boolean;
+  /** false while an earlier phase is unfinished — the card stays locked. */
+  open: boolean;
+  actedAt: string | null;
+};
+
+export type RequestPhases = {
+  acceptance: PhaseBase & {
+    status: "PENDING" | "ACCEPTED" | "CANCELLED";
+    acceptAs: AcceptAs | null;
+    requestType: PhaseRequestType | null;
+  };
+  analysis: PhaseBase & {
+    status: "PENDING" | "FINALIZED" | "CANCELLED";
+    deliveryDate: string | null;
+    analysisHours: number | null;
+    developmentHours: number | null;
+  };
+  development: PhaseBase & {
+    status: "PENDING" | "QA" | "FINALIZED" | "CANCELLED";
+    qaAt: string | null;
+  };
 };
 
 export type RequestDetail = RequestSummary & {

@@ -4,6 +4,7 @@ import { cn, formatShortDate } from "@/Shared/format";
 import type { TreeRequest } from "@/Shared/Types";
 import { useBackHere } from "@/hooks/useBack";
 import { AP_Avatar } from "./AP_Avatar";
+import { AP_RequestPhases } from "./AP_RequestPhases";
 import { AP_RequestStatusBadge } from "./AP_RequestStatusBadge";
 import { AP_TaskStatusBadge } from "./AP_TaskStatusBadge";
 import { AP_Timing } from "./AP_Timing";
@@ -15,12 +16,15 @@ export function AP_RequestTreeNode({
   now,
   showProject,
   doneHidden = 0,
+  canManage = false,
 }: {
   r: TreeRequest;
   now: Date;
   showProject: boolean;
   /** Done tasks left out of the list (the tree only shows what is still to do). */
   doneHidden?: number;
+  /** Admins see the three-phase workflow under the request. */
+  canManage?: boolean;
 }) {
   const backHere = useBackHere("Tasks");
   const closed = r.status === "DONE" || r.status === "CANCELLED";
@@ -48,6 +52,7 @@ export function AP_RequestTreeNode({
           )}
           {r.status !== "OPEN" && <AP_RequestStatusBadge status={r.status} />}
         </summary>
+        {canManage && <AP_RequestPhases number={r.number} phases={r.phases} canManage={canManage} />}
         {r.tasks.length === 0 ? (
           doneHidden > 0 ? (
             <p className="ml-6 inline-flex items-center gap-1 py-1 text-xs font-medium text-emerald-700">

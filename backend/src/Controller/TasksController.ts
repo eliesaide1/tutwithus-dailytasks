@@ -5,6 +5,7 @@ import * as TaskService from "../Application/Tasks/TaskService";
 import * as MyWeekService from "../Application/Tasks/MyWeekService";
 import * as ProjectService from "../Application/Tasks/ProjectService";
 import * as AttachmentService from "../Application/Tasks/AttachmentService";
+import * as PhaseService from "../Application/Tasks/PhaseService";
 import { getProjectTeam } from "../Application/Tasks/ProjectTeam";
 import { me, requireAdmin } from "./Middleware/auth";
 
@@ -39,6 +40,20 @@ tasksController.post("/tasks/:number/status", async (req, res) => {
 tasksController.delete("/tasks/:number", async (req, res) => {
   await RequestService.deleteRequest(me(req), String(req.params.number));
   res.json({ ok: true });
+});
+
+// ── The three-phase workflow on a request ──
+
+tasksController.post("/tasks/:number/phases/:phase/activate", async (req, res) => {
+  res.json(await PhaseService.activate(me(req), String(req.params.number), req.params.phase as PhaseService.PhaseName));
+});
+
+tasksController.patch("/tasks/:number/phases/:phase", async (req, res) => {
+  res.json(await PhaseService.update(me(req), String(req.params.number), req.params.phase as PhaseService.PhaseName, req.body));
+});
+
+tasksController.post("/tasks/:number/phases/:phase/:action", async (req, res) => {
+  res.json(await PhaseService.act(me(req), String(req.params.number), req.params.phase as PhaseService.PhaseName, String(req.params.action)));
 });
 
 tasksController.post("/tasks/:number/comments", async (req, res) => {

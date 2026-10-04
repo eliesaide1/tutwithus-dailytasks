@@ -141,7 +141,7 @@ export default function TasksScreen() {
                     </>
                   }
                 >
-                  <GroupTree requests={waitingPrereq} view={view} now={now} />
+                  <GroupTree requests={waitingPrereq} view={view} now={now} canManage={!!user.permissions.canManageTasks} />
                 </TreeNode>
               )}
               {waitingInfo.length > 0 && (
@@ -153,7 +153,7 @@ export default function TasksScreen() {
                     </>
                   }
                 >
-                  <GroupTree requests={waitingInfo} view={view} now={now} />
+                  <GroupTree requests={waitingInfo} view={view} now={now} canManage={!!user.permissions.canManageTasks} />
                 </TreeNode>
               )}
               <TreeNode
@@ -168,7 +168,7 @@ export default function TasksScreen() {
                 {active.length === 0 ? (
                   <AP_EmptyState title="Nothing here" description="No requests match these filters." />
                 ) : (
-                  <GroupTree requests={active} view={view} now={now} />
+                  <GroupTree requests={active} view={view} now={now} canManage={!!user.permissions.canManageTasks} />
                 )}
               </TreeNode>
             </div>
@@ -202,7 +202,7 @@ function Counts({ requests, tasks }: { requests: number; tasks: number }) {
 }
 
 /** Requests grouped by project / person / status, each request expandable to its tasks. */
-function GroupTree({ requests, view, now }: { requests: (TreeRequest & { doneHidden?: number })[]; view: View; now: Date }) {
+function GroupTree({ requests, view, now, canManage }: { requests: (TreeRequest & { doneHidden?: number })[]; view: View; now: Date; canManage: boolean }) {
   return (
     <ul className="mt-1 ml-2 border-l border-dotted border-slate-300 pl-4">
       {groupRequests(requests, view).map((g) => (
@@ -226,7 +226,14 @@ function GroupTree({ requests, view, now }: { requests: (TreeRequest & { doneHid
             </summary>
             <ul className="ml-2 border-l border-dotted border-slate-300 pl-4">
               {g.requests.map((r) => (
-                <AP_RequestTreeNode key={`${g.key}-${r.id}`} r={r} now={now} showProject={view !== "project"} doneHidden={(r as { doneHidden?: number }).doneHidden ?? 0} />
+                <AP_RequestTreeNode
+                  key={`${g.key}-${r.id}`}
+                  r={r}
+                  now={now}
+                  showProject={view !== "project"}
+                  doneHidden={(r as { doneHidden?: number }).doneHidden ?? 0}
+                  canManage={canManage}
+                />
               ))}
             </ul>
           </details>
