@@ -125,8 +125,19 @@ export type TaskItem = {
   completedAt: string | null;
   createdAt: string;
   assignee: UserLite | null;
+  attachments: Attachment[];
   canEdit: boolean; // may change the status
   canManage?: boolean; // may edit details / delete (admins only)
+};
+
+/** One file attached to a task. The bytes live in object storage, not in MongoDB. */
+export type Attachment = {
+  id: string;
+  filename: string;
+  contentType: string;
+  size: number;
+  uploadedBy: string | null;
+  uploadedAt: string | null;
 };
 
 export type RequestDetail = RequestSummary & {

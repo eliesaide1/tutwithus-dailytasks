@@ -6,6 +6,7 @@
 // the caller stops (React Query marks the query/mutation as failed).
 import type {
   AccountUser,
+  Attachment,
   ActivityRow,
   AdminUser,
   Announcement,
@@ -244,6 +245,48 @@ export const UpdateTask = (id: string, task: Body) => patch<Ok>(`/task-items/${i
 export const SetTaskStatus = (id: string, status: string) => post<Ok>(`/task-items/${id}/status`, { status });
 
 export const DeleteTask = (id: string) => del<Ok>(`/task-items/${id}`);
+
+// ── Task attachments ──
+//
+// Uploads go straight from the browser to object storage with a presigned PUT, so a big
+// PDF never passes through the API. Three steps: ask, upload, confirm.
+
+type Presigned = { uploadUrl: string; key: string; contentType: string; expiresIn: number };
+
+/** Upload one file to a task. `onProgress` gets 0..1 so the caller can show a bar. */
+export async function UploadAttachment(taskId: string, file: File, onProgress?: (fraction: number) => void): Promise<Attachment> {
+  const contentType = file.type || "application/octet-stream";
+  const slot = await post<Presigned>(`/task-items/${taskId}/attachments/presign`, {
+    filename: file.name,
+    contentType,
+    size: file.size,
+  });
+
+  // XHR rather than fetch: it reports upload progress, which fetch still cannot.
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", slot.uploadUrl, true);
+    xhr.setRequestHeader("Content-Type", slot.contentType);
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new ApiError(xhr.status, "The file couldn't be uploaded. Please try again."));
+    xhr.onerror = () => reject(new ApiError(0, "The file couldn't be uploaded. Check your connection."));
+    xhr.send(file);
+  }).catch((e: ApiError) => {
+    SharedService.showAlert(e.message, undefined, "Upload failed");
+    throw e;
+  });
+
+  onProgress?.(1);
+  return post<Attachment>(`/task-items/${taskId}/attachments`, { key: slot.key, filename: file.name });
+}
+
+/** Opening this URL redirects to a short-lived storage link. */
+export const AttachmentUrl = (taskId: string, fileId: string) => apiUrl(`/task-items/${taskId}/attachments/${fileId}`);
+
+export const DeleteAttachment = (taskId: string, fileId: string) => del<Ok>(`/task-items/${taskId}/attachments/${fileId}`);
 
 /** Hand a task to someone on the project's team (admins and the request's owner). */
 export const AssignTask = (id: string, assignee: string) => post<Ok>(`/task-items/${id}/assign`, { assignee });

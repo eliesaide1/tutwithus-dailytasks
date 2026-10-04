@@ -97,6 +97,14 @@ export function serializeTask(t: Lean, viewer?: Viewer) {
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt,
     assignee: userLite(t.assignee),
+    attachments: ((t.attachments ?? []) as Lean[]).map((a) => ({
+      id: String(a._id),
+      filename: a.filename as string,
+      contentType: (a.contentType as string) ?? "application/octet-stream",
+      size: (a.size as number) ?? 0,
+      uploadedBy: idOf(a.uploadedBy),
+      uploadedAt: a.uploadedAt ?? null,
+    })),
     // canEdit: may change the status; canManage: may edit the task's details or delete it.
     canEdit: viewer ? canEditTask(viewer, { assignee: idOf(t.assignee) }) : undefined,
     canManage: viewer ? canManageTasks(viewer) : undefined,

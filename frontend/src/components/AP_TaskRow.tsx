@@ -5,6 +5,7 @@ import { DeleteTask, UpdateTask } from "@/Shared/SharedService";
 import { formValues, hours } from "@/Shared/SharedFunctions";
 import type { TaskItem, TeamPerson } from "@/Shared/Types";
 import { useApiMutation } from "@/hooks/useApiMutation";
+import { useQueryClient } from "@tanstack/react-query";
 import { TASK_KEYS } from "@/hooks/useTasks";
 import { AP_AssigneeSelect } from "./AP_AssigneeSelect";
 import { AP_Avatar } from "./AP_Avatar";
@@ -12,6 +13,7 @@ import { AP_Button } from "./AP_Button";
 import { AP_StatusSelect } from "./AP_StatusSelect";
 import { AP_TaskFields } from "./AP_TaskFields";
 import { AP_TaskStatusBadge } from "./AP_TaskStatusBadge";
+import { AP_Attachments } from "./AP_Attachments";
 
 /**
  * One task inside a request: details, status, (for admins) edit / delete, and for the
@@ -36,6 +38,8 @@ export function AP_TaskRow({
     onSuccess: () => setEditing(false),
   });
   const del = useApiMutation(() => DeleteTask(t.id), { invalidate: [...TASK_KEYS] });
+  const queryClient = useQueryClient();
+  const refresh = () => TASK_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
 
   return (
     <li className={cn("px-5 py-3", t.status === "DONE" && "border-l-4 border-l-emerald-500 bg-emerald-50/60")}>
@@ -63,6 +67,12 @@ export function AP_TaskRow({
           </p>
           {t.blocker && t.status !== "DONE" && <p className="mt-1 text-xs text-red-700">Blocker: {t.blocker}</p>}
           {t.description && <p className="mt-1 text-xs whitespace-pre-wrap text-slate-600">{t.description}</p>}
+          {/* Attaching follows canEdit: admins, or whoever the task belongs to. */}
+          {(t.attachments.length > 0 || t.canEdit) && (
+            <div className="mt-2 max-w-xl">
+              <AP_Attachments taskId={t.id} attachments={t.attachments} canEdit={t.canEdit} onChange={refresh} />
+            </div>
+          )}
         </div>
         {t.canEdit ? <AP_StatusSelect kind="task" id={t.id} status={t.status} /> : <AP_TaskStatusBadge status={t.status} />}
       </div>

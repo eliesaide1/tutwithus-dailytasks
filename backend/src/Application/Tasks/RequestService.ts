@@ -7,6 +7,7 @@ import { canEditRequest, canManageTasks, canSeeAllTasks, sameId } from "../Commo
 import { logActivity, notify } from "../Common/activity";
 import { isId } from "../../Infrastructure/Database/database";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "../Shared/constants";
+import { dropAttachments } from "./AttachmentCleanup";
 import {
   USER_FIELDS,
   findRequest,
@@ -222,7 +223,9 @@ export async function setRequestStatus(user: UserDoc, numberParam: string, input
 export async function deleteRequest(user: UserDoc, numberParam: string) {
   const r = await findRequest(numberParam);
   if (!canEditRequest(user, r)) throw forbidden("You cannot delete this request.");
-  const taskIds = await Task.find({ request: r._id }).distinct("_id");
+  const tasks = await Task.find({ request: r._id }).select("_id attachments").lean();
+  const taskIds = tasks.map((t) => t._id);
+  await dropAttachments(tasks.flatMap((t) => t.attachments ?? []));
   await Promise.all([
     Comment.deleteMany({ $or: [{ request: r._id }, { task: { $in: taskIds } }] }),
     Task.deleteMany({ request: r._id }),

@@ -3,6 +3,19 @@ import { baseOptions, defineModel } from "./base";
 
 const { ObjectId } = Schema.Types;
 
+// One uploaded file. The bytes live in object storage; only this metadata is in MongoDB.
+const attachmentSchema = new Schema(
+  {
+    key: { type: String, required: true }, // storage key, server-generated
+    filename: { type: String, required: true }, // original name, shown to people
+    contentType: { type: String, default: "application/octet-stream" },
+    size: { type: Number, default: 0 },
+    uploadedBy: { type: ObjectId, ref: "User", default: null },
+    uploadedAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+);
+
 const taskSchema = new Schema(
   {
     title: { type: String, required: true },
@@ -19,6 +32,7 @@ const taskSchema = new Schema(
     assignee: { type: ObjectId, ref: "User", default: null, index: true },
     createdBy: { type: ObjectId, ref: "User", default: null },
     meeting: { type: ObjectId, ref: "Meeting", default: null },
+    attachments: { type: [attachmentSchema], default: [] },
   },
   baseOptions(),
 );

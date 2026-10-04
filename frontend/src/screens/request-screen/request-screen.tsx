@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, MessageSquare, Pencil, Plus, Trash } from "lucide-react";
 import { REQUEST_TYPE_LABELS, type RequestType } from "@/Shared/constants";
 import { formatAge, formatShortDate } from "@/Shared/format";
-import { AddComment, AddTask, DeleteRequest, UpdateRequest } from "@/Shared/SharedService";
+import { AddComment, AddTask, DeleteRequest, UpdateRequest, UploadAttachment } from "@/Shared/SharedService";
 import { formValues, hours } from "@/Shared/SharedFunctions";
 import type { RequestActivity, RequestDetail } from "@/Shared/Types";
 import { TASK_KEYS, useProjectTeam, useRequest } from "@/hooks/useTasks";
@@ -25,6 +25,7 @@ import { AP_RequestStatusBadge } from "@/components/AP_RequestStatusBadge";
 import { AP_RequestFields } from "@/components/AP_RequestFields";
 import { AP_StatusSelect } from "@/components/AP_StatusSelect";
 import { AP_TaskFields } from "@/components/AP_TaskFields";
+import { AP_Attachments } from "@/components/AP_Attachments";
 import { AP_TaskRow } from "@/components/AP_TaskRow";
 import { AP_Timing } from "@/components/AP_Timing";
 import { AP_TypeIcon } from "@/components/AP_TypeIcon";
@@ -60,6 +61,8 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
   const people = (team.data?.members ?? []).map((p) => ({ id: p.id, name: personWithTitle(p) }));
   const [editingRequest, setEditingRequest] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
+  // Files picked before the task exists; uploaded once AddTask returns its id.
+  const [newTaskFiles, setNewTaskFiles] = useState<File[]>([]);
 
   const closed = r.status === "DONE" || r.status === "CANCELLED";
   const done = r.tasks.filter((t) => t.status === "DONE").length;
@@ -165,10 +168,22 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
                     onSubmit={(e) => {
                       e.preventDefault();
                       const form = e.currentTarget;
-                      addTask.mutate(formValues(form), { onSuccess: () => form.reset() });
+                      const files = newTaskFiles;
+                      addTask.mutate(formValues(form), {
+                        onSuccess: async (created) => {
+                          // The task only gets an id now, so its files upload here.
+                          for (const file of files) await UploadAttachment(created.id, file).catch(() => {});
+                          setNewTaskFiles([]);
+                          form.reset();
+                        },
+                      });
                     }}
                   >
                     <AP_TaskFields people={people} />
+                    <div className="mt-3">
+                      <p className="mb-1.5 text-xs font-medium text-slate-500">Attachments</p>
+                      <AP_Attachments taskId={null} canEdit pending={newTaskFiles} onPendingChange={setNewTaskFiles} />
+                    </div>
                     <div className="mt-3 flex justify-end">
                       <AP_Button type="submit" size="sm" disabled={addTask.isPending}>
                         {addTask.isPending ? "Adding…" : "Add task"}

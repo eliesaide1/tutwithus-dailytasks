@@ -10,6 +10,7 @@ import { TASK_STATUSES, TASK_STATUS_LABELS } from "../Shared/constants";
 import { findRequest, idOf, taskFields, taskInput } from "./TaskMappers";
 import { assertRefs } from "./RequestService";
 import { assertInTeam, getProjectTeam } from "./ProjectTeam";
+import { dropAttachments } from "./AttachmentCleanup";
 
 export async function addTask(user: UserDoc, numberParam: string, input: unknown) {
   const r = await findRequest(numberParam);
@@ -74,6 +75,7 @@ export async function deleteTask(user: UserDoc, id: string) {
   const { task, request } = await findTask(id);
   if (!canManageTasks(user)) throw forbidden("Only Charbel, Elie and Gabriel can delete tasks.");
   await Comment.deleteMany({ task: task._id });
+  await dropAttachments(task.attachments);
   await task.deleteOne();
   await logActivity({ actor: user.id, entity: "Task", entityId: task.id, action: "deleted", summary: `deleted task "${task.title}" from #${request.number}`, link: `/tasks/${request.number}` });
 }

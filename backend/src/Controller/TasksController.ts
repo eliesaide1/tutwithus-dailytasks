@@ -4,6 +4,7 @@ import * as RequestService from "../Application/Tasks/RequestService";
 import * as TaskService from "../Application/Tasks/TaskService";
 import * as MyWeekService from "../Application/Tasks/MyWeekService";
 import * as ProjectService from "../Application/Tasks/ProjectService";
+import * as AttachmentService from "../Application/Tasks/AttachmentService";
 import { getProjectTeam } from "../Application/Tasks/ProjectTeam";
 import { me, requireAdmin } from "./Middleware/auth";
 
@@ -53,6 +54,29 @@ tasksController.post("/tasks/:number/tasks", async (req, res) => {
 
 tasksController.patch("/task-items/:id", async (req, res) => {
   await TaskService.updateTask(me(req), String(req.params.id), req.body);
+  res.json({ ok: true });
+});
+
+// ── Attachments on a task ──
+// The browser uploads straight to object storage, so the file never passes through here:
+// ask for a presigned PUT, upload, then confirm.
+
+tasksController.post("/task-items/:id/attachments/presign", async (req, res) => {
+  res.json(await AttachmentService.presign(me(req), String(req.params.id), req.body));
+});
+
+tasksController.post("/task-items/:id/attachments", async (req, res) => {
+  res.status(201).json(await AttachmentService.confirm(me(req), String(req.params.id), req.body));
+});
+
+// Redirects to a short-lived storage URL; the storage key is never sent to the client.
+tasksController.get("/task-items/:id/attachments/:fileId", async (req, res) => {
+  const url = await AttachmentService.downloadUrl(me(req), String(req.params.id), String(req.params.fileId));
+  res.redirect(302, url);
+});
+
+tasksController.delete("/task-items/:id/attachments/:fileId", async (req, res) => {
+  await AttachmentService.remove(me(req), String(req.params.id), String(req.params.fileId));
   res.json({ ok: true });
 });
 

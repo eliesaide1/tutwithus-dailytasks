@@ -30,6 +30,21 @@ function required(name: string) {
 const jwtSecret = required("JWT_SECRET");
 if (jwtSecret.length < 32) throw new Error("JWT_SECRET must be at least 32 characters.");
 
+// Object storage for task attachments (DigitalOcean Spaces). Optional: when these are
+// unset the attachment endpoints answer 503 and the rest of the app is unaffected.
+function spacesConfig() {
+  const { SPACES_KEY, SPACES_SECRET, SPACES_BUCKET, SPACES_REGION, SPACES_ENDPOINT } = process.env;
+  if (!SPACES_KEY || !SPACES_SECRET || !SPACES_BUCKET) return null;
+  const region = SPACES_REGION ?? "fra1";
+  return {
+    key: SPACES_KEY,
+    secret: SPACES_SECRET,
+    bucket: SPACES_BUCKET,
+    region,
+    endpoint: SPACES_ENDPOINT ?? `https://${region}.digitaloceanspaces.com`,
+  };
+}
+
 export const config = {
   env: process.env.NODE_ENV ?? "development",
   isProd: process.env.NODE_ENV === "production",
@@ -43,4 +58,7 @@ export const config = {
     .filter(Boolean),
   serverRoot,
   clientDist: path.resolve(serverRoot, "..", "frontend", "dist"),
+  spaces: spacesConfig(),
+  /** Largest attachment accepted, in bytes. */
+  maxAttachmentBytes: Number(process.env.MAX_ATTACHMENT_MB ?? 25) * 1024 * 1024,
 };
