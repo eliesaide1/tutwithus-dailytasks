@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { CircleCheck, FolderOpen } from "lucide-react";
+import { ChevronRight, CircleCheck, FolderOpen } from "lucide-react";
 import { cn, formatShortDate } from "@/Shared/format";
 import type { TreeRequest } from "@/Shared/Types";
 import { useBackHere } from "@/hooks/useBack";
@@ -30,8 +30,9 @@ export function AP_RequestTreeNode({
   const closed = r.status === "DONE" || r.status === "CANCELLED";
   return (
     <li className="py-0.5">
-      <details>
+      <details className="group">
         <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1 rounded-md px-1 py-1 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+          <ChevronRight className="size-3.5 shrink-0 text-slate-400 transition-transform duration-150 group-open:rotate-90" aria-hidden />
           <FolderOpen className={cn("size-4", r.status === "CANCELLED" ? "text-slate-400" : "text-emerald-600")} />
           <AP_TypeIcon type={r.type} />
           <Link

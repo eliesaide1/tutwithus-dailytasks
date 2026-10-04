@@ -1,6 +1,6 @@
 import { useSearchParams } from "react-router";
 import type { ReactNode } from "react";
-import { Briefcase, CircleDot, Hourglass, Plus, Workflow } from "lucide-react";
+import { Briefcase, ChevronRight, CircleDot, Hourglass, Plus, Workflow } from "lucide-react";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, type RequestStatus } from "@/Shared/constants";
 import type { TreeRequest } from "@/Shared/Types";
 import { useTaskTree } from "@/hooks/useTasks";
@@ -183,8 +183,9 @@ export default function TasksScreen() {
 /** One top-level node of the tree (waiting prerequisite, waiting info, total). */
 function TreeNode({ icon, label, open = false, children }: { icon: ReactNode; label: ReactNode; open?: boolean; children: ReactNode }) {
   return (
-    <details open={open} className="mb-1">
+    <details open={open} className="group mb-1">
       <summary className="flex cursor-pointer list-none items-center gap-2 py-0.5 font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="size-3.5 shrink-0 text-slate-400 transition-transform duration-150 group-open:rotate-90" aria-hidden />
         {icon}
         {label}
       </summary>
@@ -207,8 +208,9 @@ function GroupTree({ requests, view, now, canManage }: { requests: (TreeRequest 
     <ul className="mt-1 ml-2 border-l border-dotted border-slate-300 pl-4">
       {groupRequests(requests, view).map((g) => (
         <li key={g.key} className="py-0.5">
-          <details open>
+          <details open className="group">
             <summary className="flex cursor-pointer list-none items-center gap-2 py-0.5 font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+              <ChevronRight className="size-3.5 shrink-0 text-slate-400 transition-transform duration-150 group-open:rotate-90" aria-hidden />
               {g.avatar ? (
                 <AP_Avatar name={g.avatar.name} src={g.avatar.src} size={20} />
               ) : view === "status" ? (
