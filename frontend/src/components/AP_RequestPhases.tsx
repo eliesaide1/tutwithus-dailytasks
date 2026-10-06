@@ -180,9 +180,9 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
               <AP_Button
                 type="button"
                 size="sm"
-                variant="danger"
+                variant="secondary"
                 disabled={!a.activated || busy}
-                onClick={() => confirm(`Cancel request #${number}?`) && run.mutate({ phase: "acceptance", action: "cancel" })}
+                onClick={() => run.mutate({ phase: "acceptance", action: "cancel" })}
               >
                 Cancel
               </AP_Button>
@@ -245,9 +245,9 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
               <AP_Button
                 type="button"
                 size="sm"
-                variant="danger"
+                variant="secondary"
                 disabled={!an.activated || busy}
-                onClick={() => confirm(`Cancel request #${number}?`) && run.mutate({ phase: "analysis", action: "cancel" })}
+                onClick={() => run.mutate({ phase: "analysis", action: "cancel" })}
               >
                 Cancel
               </AP_Button>
@@ -290,9 +290,9 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
               <AP_Button
                 type="button"
                 size="sm"
-                variant="danger"
+                variant="secondary"
                 disabled={!d.activated || busy}
-                onClick={() => confirm(`Cancel request #${number}?`) && run.mutate({ phase: "development", action: "cancel" })}
+                onClick={() => run.mutate({ phase: "development", action: "cancel" })}
               >
                 Cancel
               </AP_Button>

@@ -93,7 +93,11 @@ One shared vocabulary also means "what is sitting in Planning?" is answerable ac
 whole company, which per-department phase names would make impossible.
 
 The request's own status follows along: **In progress** when accepted, **Done** when
-finalized, **Cancelled** from a cancel at any phase.
+finalized.
+
+**Cancel backs out of the phase** — it closes the editor and leaves the request untouched,
+so a misclick cannot take live work off the board. Rejecting a request outright is a
+separate decision, made with the request's own status control on `/tasks/:number`.
 
 **Support is the exception.** Accepting as Support closes the request immediately — it is
 handled with the client by email, so there is nothing to analyse or build, and both later

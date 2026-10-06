@@ -127,13 +127,16 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
     p.actedAt = new Date();
   };
 
+  // Cancel backs out of the phase — it closes the editor and leaves the request alone.
+  // Rejecting a request outright is a separate decision, made with the request's own
+  // status control, so a misclick here can never take a live request off the board.
   if (action === "cancel") {
-    p.status = "CANCELLED";
-    stamp();
-    r.status = "CANCELLED";
-    r.closedAt = new Date();
+    p.activated = false;
+    p.status = "PENDING";
+    p.actedBy = null;
+    p.actedAt = undefined;
     await r.save();
-    await note(r, `cancelled #${r.number} at ${PHASE_LABELS[phase]}`, user);
+    await note(r, `closed ${PHASE_LABELS[phase]} on #${r.number} without ${phase === "acceptance" ? "accepting" : "finalizing"}`, user);
     return { ok: true };
   }
 
