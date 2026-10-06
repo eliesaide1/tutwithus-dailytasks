@@ -93,7 +93,11 @@ One shared vocabulary also means "what is sitting in Planning?" is answerable ac
 whole company, which per-department phase names would make impossible.
 
 The request's own status follows along: **In progress** when accepted, **Done** when
-finalized.
+finalized — and **completing a request completes the work inside it**: any task still open
+is marked done and stamped with the request's closing time. The Done report counts tasks,
+not requests, so without that a delivered request would report as nothing delivered. The
+same applies to setting a request to Done by hand. It is recorded in the activity log,
+since they are completions nobody clicked.
 
 **Cancel backs out of the phase** — it closes the editor and leaves the request untouched,
 so a misclick cannot take live work off the board. Rejecting a request outright is a

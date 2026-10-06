@@ -8,6 +8,7 @@ import { logActivity, notify } from "../Common/activity";
 import { isId } from "../../Infrastructure/Database/database";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "../Shared/constants";
 import { dropAttachments } from "./AttachmentCleanup";
+import { completeTasksOf } from "./TaskCompletion";
 import {
   USER_FIELDS,
   findRequest,
@@ -217,6 +218,9 @@ export async function setRequestStatus(user: UserDoc, numberParam: string, input
   r.status = status;
   r.closedAt = closed ? new Date() : undefined;
   await r.save();
+  // Completing a request completes the work in it — the Done report counts tasks, not
+  // requests, so leaving them open would both under-report and contradict the request.
+  if (status === "DONE") await completeTasksOf(r, user, r.closedAt);
   const link = `/tasks/${r.number}`;
   await logActivity({ actor: user.id, entity: "Request", entityId: r.number, action: "status", summary: `set request #${r.number} to ${REQUEST_STATUS_LABELS[status]}`, link });
   await notify({ user: r.owner, actor: user.id, title: `#${r.number} is now ${REQUEST_STATUS_LABELS[status]}`, body: r.title, link });

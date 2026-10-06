@@ -20,6 +20,7 @@ import { canManageTasks } from "../Common/permissions";
 import { logActivity } from "../Common/activity";
 import { zDate } from "../Common/validation";
 import { findRequest } from "./TaskMappers";
+import { completeTasksOf } from "./TaskCompletion";
 
 export const PHASES = ["acceptance", "analysis", "development"] as const;
 export type PhaseName = (typeof PHASES)[number];
@@ -151,6 +152,7 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
       r.status = "DONE";
       r.closedAt = new Date();
       await r.save();
+      await completeTasksOf(r, user, r.closedAt);
       await note(r, `accepted #${r.number} as support — closed at client level`, user);
       return { ok: true, closed: true };
     }
@@ -187,6 +189,8 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
   r.status = "DONE";
   r.closedAt = new Date();
   await r.save();
+  // The Done report counts tasks, so delivering the request completes the work in it.
+  await completeTasksOf(r, user, r.closedAt);
   await note(r, `finalized #${r.number} — delivered`, user);
   return { ok: true, closed: true };
 }
