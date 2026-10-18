@@ -29,7 +29,8 @@ export function AP_TaskFields({
   return (
     <div className="grid gap-3 sm:grid-cols-6">
       <AP_Field label="Task" className="sm:col-span-6">
-        <AP_Input name="title" required maxLength={200} defaultValue={task?.title} />
+        {/* A textarea so a long task wraps instead of scrolling out of sight. */}
+        <AP_Textarea name="title" required rows={2} maxLength={500} defaultValue={task?.title} className="min-h-0" />
       </AP_Field>
       <AP_Field label="Kind" className="sm:col-span-2">
         <AP_Select name="kind" defaultValue={task?.kind ?? "General"}>

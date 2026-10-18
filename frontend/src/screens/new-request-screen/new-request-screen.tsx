@@ -169,7 +169,8 @@ export default function NewRequestScreen() {
                 {rows.map((key) => (
                   <div key={key} className="relative grid gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-6">
                     <AP_Field label="Task" className="sm:col-span-6">
-                      <AP_Input name={`t${key}_title`} placeholder="e.g. Solution development" maxLength={200} />
+                      {/* Wraps, so the whole task can be written out. */}
+                      <AP_Textarea name={`t${key}_title`} rows={2} placeholder="e.g. Solution development" maxLength={500} className="min-h-0" />
                     </AP_Field>
                     <AP_Field label="Kind" className="sm:col-span-2">
                       <AP_Select name={`t${key}_kind`} defaultValue="General">

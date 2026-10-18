@@ -85,6 +85,10 @@ Who can do what is stored as flags on the user — `canApproveRequests`,
 `skipsRequestApproval`, `canBypassApproval` — not as names, so the chain survives people
 changing roles or leaving.
 
+A task's title is written in a **wrapping textarea**, not a single-line box, so a whole
+task can be typed out and read back. Up to 500 characters; line breaks are collapsed to
+single spaces on save, because the title is what every tree, list and report shows.
+
 ### Tasks raised for other people
 
 Anyone can raise a task for anyone, **including across departments** — the project-team

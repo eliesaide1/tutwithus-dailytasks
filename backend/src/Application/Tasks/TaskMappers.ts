@@ -38,7 +38,12 @@ export const requestInput = z.object({
 });
 
 export const taskInput = z.object({
-  title: z.string().trim().min(1, "Task title is required.").max(200),
+  // Written in a wrapping textarea, so it can run to a sentence and contain line breaks.
+  // Collapsed to one line here: the title is what every list, tree and report shows.
+  title: z
+    .string()
+    .transform((v) => v.replace(/\s+/g, " ").trim())
+    .pipe(z.string().min(1, "Task title is required.").max(500)),
   kind: z.string().trim().min(1).max(40).default("General"),
   assignee: zRef,
   estimateHours: zEstimate,
