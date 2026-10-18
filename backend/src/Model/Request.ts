@@ -61,6 +61,23 @@ const requestSchema = new Schema(
     project: { type: ObjectId, ref: "Project", required: true, index: true },
     createdBy: { type: ObjectId, ref: "User", default: null },
     owner: { type: ObjectId, ref: "User", default: null },
+    // A new request waits for approval before it becomes real work. Gabriel's open
+    // straight away; Elie's need Gabriel; everyone else's need either of them.
+    approval: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ["PENDING", "APPROVED", "REJECTED"], default: "PENDING" },
+          decidedBy: { type: ObjectId, ref: "User", default: null },
+          decidedAt: Date,
+          note: String, // why it was rejected
+          // True when it opened without review: the author skips approval, or ticked bypass.
+          auto: { type: Boolean, default: false },
+          bypassed: { type: Boolean, default: false },
+        },
+        { _id: false },
+      ),
+      default: () => ({}),
+    },
     phases: {
       type: new Schema(
         {

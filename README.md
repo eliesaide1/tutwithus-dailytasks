@@ -61,6 +61,30 @@ Availability, recurring meetings, capacity and responsibilities are loaded from 
 | Done report | `/admin/reports` | Admins only: every task completed this week, last week, this month, last month or between two dates, by person and by project, with hours and on-time rate. Export to Excel (CSV) or print |
 | Admin | `/admin/*` | Users and access (create accounts, reset passwords, roles), projects, activity log |
 
+## Approving new requests
+
+A new request is not work until someone signs off on it.
+
+| Who raises it | What happens |
+|---|---|
+| **Gabriel** (Project Leader) | Opens straight away — he is the top of the chain |
+| **Elie** (CTO) | Waits for **Gabriel**. Elie alone sees a **Bypass the Project Leader** checkbox for when Gabriel is away |
+| **Anyone else**, including the CEO | Waits for **Gabriel or Elie** — either can approve |
+
+**Nobody approves their own request.** That is what the step is for, and it is also what
+decides Elie's case: he is an approver, so the only approver left for him is Gabriel.
+
+Anyone may *raise* a request. Editing and deleting stay admin-only.
+
+While a request is pending it is not work: it stays out of the workload and out of
+everyone's tree except the author's and the approvers', and its
+[workflow phases](#request-workflow) do not open. Approving releases it; rejecting keeps
+the record (with the reason, which the author is notified of) but it never becomes work.
+
+Who can do what is stored as flags on the user — `canApproveRequests`,
+`skipsRequestApproval`, `canBypassApproval` — not as names, so the chain survives people
+changing roles or leaving.
+
 ## Request workflow
 
 Expanding a request in the tree shows three phases underneath it. Each is **activated**

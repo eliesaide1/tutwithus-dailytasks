@@ -18,6 +18,9 @@ export function sessionUser(u: UserDoc) {
     avatarUrl: u.avatarUrl ?? null,
     timezone: u.timezone,
     mustChangePassword: u.mustChangePassword,
+    canApproveRequests: !!u.canApproveRequests,
+    canBypassApproval: !!u.canBypassApproval,
+    skipsRequestApproval: !!u.skipsRequestApproval,
     department: u.department ? String(u.department) : null,
     permissions: permissionsOf(u),
   };

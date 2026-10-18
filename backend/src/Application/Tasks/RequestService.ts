@@ -9,6 +9,7 @@ import { isId } from "../../Infrastructure/Database/database";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "../Shared/constants";
 import { dropAttachments } from "./AttachmentCleanup";
 import { completeTasksOf } from "./TaskCompletion";
+import { approvalOnCreate, approversFor } from "./ApprovalService";
 import {
   USER_FIELDS,
   findRequest,
@@ -68,6 +69,12 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
     const requestIds = await Task.distinct("request", { assignee: personId });
     filter.$or = [{ owner: personId }, { _id: { $in: requestIds } }, ...(seeAll ? [] : [{ createdBy: personId }])];
   }
+  // Not-yet-approved requests are not work: they stay out of the tree for everyone except
+  // the people who can act on them — the author, and whoever may approve it.
+  const approvalFilter: Lean = user.canApproveRequests
+    ? { $or: [{ "approval.status": "APPROVED" }, { "approval.status": "PENDING" }] }
+    : { $or: [{ "approval.status": "APPROVED" }, { "approval.status": "PENDING", createdBy: user.id }] };
+
   const statusFilter: Lean =
     show === "open"
       ? { status: { $nin: ["DONE", "CANCELLED"] } }
@@ -76,7 +83,7 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
         : {};
 
   const [requests, waitingInfo, waitingPrereq] = await Promise.all([
-    Request.find({ ...filter, ...statusFilter })
+    Request.find({ ...filter, ...approvalFilter, ...statusFilter })
       .sort({ number: -1 })
       .populate("project", "code name color")
       .populate("owner", "name avatarUrl")
@@ -107,7 +114,7 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
       const full = sameId(idOf(r.owner), personId) || (!seeAll && sameId(idOf(r.createdBy), user.id));
       if (personId && !full) rt = rt.filter((t) => sameId(idOf(t.assignee), personId));
       return {
-        ...serializeRequest(r),
+        ...serializeRequest(r, user),
         tasks: rt.map((t) => ({
           id: String(t._id),
           title: t.title,
@@ -122,10 +129,18 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
 
 // ── Create ──
 
-const createInput = requestInput.extend({ tasks: z.array(taskInput).max(50).default([]) });
+const createInput = requestInput.extend({
+  tasks: z.array(taskInput).max(50).default([]),
+  // Offered only to people who may use it; ignored for anyone else.
+  bypassApproval: z.coerce.boolean().default(false),
+});
 
+/**
+ * Anyone may raise a request — that is what the approval step is for. Only people who
+ * skip approval (or may bypass it) get one that opens straight away; everyone else's
+ * waits for Gabriel or Elie. Editing and deleting stay admin-only.
+ */
 export async function createRequest(user: UserDoc, input: unknown) {
-  if (!canManageTasks(user)) throw forbidden("Only Charbel, Elie and Gabriel can create tasks.");
   const body = parse(createInput, input);
   await assertRefs({ project: body.project, assignees: body.tasks.map((t) => t.assignee) });
   // The project's department manager owns the request; tasks stay within their team.
@@ -133,22 +148,39 @@ export async function createRequest(user: UserDoc, input: unknown) {
   for (const t of body.tasks) assertInTeam(team, t.assignee);
   const owner = team.lead?.id ?? user.id;
 
-  const { tasks, ...data } = body;
+  const { tasks, bypassApproval, ...data } = body;
   const number = await nextRequestNumber();
-  const request = await Request.create({ ...data, owner, createdBy: user.id, number });
+  const approval = approvalOnCreate(user, bypassApproval);
+  const request = await Request.create({ ...data, owner, createdBy: user.id, number, approval });
   const created = await Task.insertMany(
     tasks.map((t, i) => ({ ...taskFields(t), assignee: t.assignee ?? team.lead?.id ?? null, request: request._id, order: i, createdBy: user.id })),
   );
 
   const link = `/tasks/${number}`;
-  await logActivity({ actor: user.id, entity: "Request", entityId: number, action: "created", summary: `created request #${number} "${request.title}"`, link });
-  await notify({ user: request.owner, actor: user.id, title: `You own request #${number}`, body: request.title, link });
-  for (const t of created) {
-    await notify({ user: t.assignee, actor: user.id, title: `New task assigned: ${t.title}`, body: `#${number} ${request.title}`, link });
+  const pending = approval.status === "PENDING";
+  await logActivity({
+    actor: user.id,
+    entity: "Request",
+    entityId: number,
+    action: "created",
+    summary: `created request #${number} "${request.title}"${pending ? " — waiting for approval" : approval.bypassed ? " — opened without approval (bypass)" : ""}`,
+    link,
+  });
+
+  if (pending) {
+    // Nobody is given work yet: it goes to whoever can approve it.
+    for (const a of await approversFor(user.id)) {
+      await notify({ user: a._id, actor: user.id, title: `Approve request #${number}?`, body: request.title, link });
+    }
+  } else {
+    await notify({ user: request.owner, actor: user.id, title: `You own request #${number}`, body: request.title, link });
+    for (const t of created) {
+      await notify({ user: t.assignee, actor: user.id, title: `New task assigned: ${t.title}`, body: `#${number} ${request.title}`, link });
+    }
   }
   // Task ids come back in the order they were submitted, so the client can attach the
   // files it collected per row — the tasks only exist now.
-  return { number, tasks: created.map((t) => ({ id: String(t._id), title: t.title })) };
+  return { number, pending, tasks: created.map((t) => ({ id: String(t._id), title: t.title })) };
 }
 
 // ── Detail ──

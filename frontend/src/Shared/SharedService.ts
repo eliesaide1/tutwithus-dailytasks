@@ -232,13 +232,22 @@ export const GetTaskTree = (params: { person: string; show: string; project: str
 
 export const GetRequest = (number: string | number) => get<RequestResponse>(`/tasks/${number}`);
 
-export const CreateRequest = (request: Body) => post<{ number: number; tasks: { id: string; title: string }[] }>("/tasks", request);
+export const CreateRequest = (request: Body) =>
+  post<{ number: number; pending: boolean; tasks: { id: string; title: string }[] }>("/tasks", request);
 
 export const UpdateRequest = (number: number, request: Body) => patch<Ok>(`/tasks/${number}`, request);
 
 export const SetRequestStatus = (number: number | string, status: string) => post<Ok>(`/tasks/${number}/status`, { status });
 
 export const DeleteRequest = (number: number) => del<Ok>(`/tasks/${number}`);
+
+// ── Approval of new requests ──
+
+/** Approve a request so it becomes real work. The author can never approve their own. */
+export const ApproveRequest = (number: number) => post<Ok>(`/tasks/${number}/approve`);
+
+/** Reject it. Nothing is deleted; it just never becomes work. */
+export const RejectRequest = (number: number, note?: string) => post<Ok>(`/tasks/${number}/reject`, { note });
 
 // ── Request phases (acceptance -> development analysis -> solution development) ──
 

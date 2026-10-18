@@ -43,6 +43,9 @@ export async function seedPeople() {
     name: "Gabriel Sabbagh",
     title: "Project Leader",
     role: "ADMIN",
+    // Top of the approval chain: his own requests open straight away.
+    canApproveRequests: true,
+    skipsRequestApproval: true,
     timezone: "Asia/Beirut",
     weeklyCapacityMins: h(21),
     manager: charbel._id,
@@ -58,6 +61,9 @@ export async function seedPeople() {
     name: "Elie Saide",
     title: "CTO",
     role: "ADMIN",
+    // Approves others' requests; his own need Gabriel, or the bypass box when Gabriel is away.
+    canApproveRequests: true,
+    canBypassApproval: true,
     timezone: "Asia/Beirut",
     weeklyCapacityMins: h(30),
     manager: charbel._id,

@@ -24,6 +24,11 @@ const userSchema = new Schema(
     lastLoginAt: Date,
     manager: { type: ObjectId, ref: "User", default: null },
     department: { type: ObjectId, ref: "Department", default: null },
+    // New-request approval. Flags rather than names, so the chain survives people
+    // changing roles or leaving.
+    canApproveRequests: { type: Boolean, default: false }, // may approve others' requests
+    skipsRequestApproval: { type: Boolean, default: false }, // own requests open straight away
+    canBypassApproval: { type: Boolean, default: false }, // may tick "bypass" when the approver is away
   },
   baseOptions(["passwordHash"]),
 );

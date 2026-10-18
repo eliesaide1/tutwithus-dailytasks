@@ -6,6 +6,7 @@ import * as MyWeekService from "../Application/Tasks/MyWeekService";
 import * as ProjectService from "../Application/Tasks/ProjectService";
 import * as AttachmentService from "../Application/Tasks/AttachmentService";
 import * as PhaseService from "../Application/Tasks/PhaseService";
+import * as ApprovalService from "../Application/Tasks/ApprovalService";
 import { getProjectTeam } from "../Application/Tasks/ProjectTeam";
 import { me, requireAdmin } from "./Middleware/auth";
 
@@ -40,6 +41,20 @@ tasksController.post("/tasks/:number/status", async (req, res) => {
 tasksController.delete("/tasks/:number", async (req, res) => {
   await RequestService.deleteRequest(me(req), String(req.params.number));
   res.json({ ok: true });
+});
+
+// ── Approval of new requests ──
+
+tasksController.get("/approvals", async (req, res) => {
+  res.json(await ApprovalService.listPending(me(req)));
+});
+
+tasksController.post("/tasks/:number/approve", async (req, res) => {
+  res.json(await ApprovalService.approve(me(req), String(req.params.number)));
+});
+
+tasksController.post("/tasks/:number/reject", async (req, res) => {
+  res.json(await ApprovalService.reject(me(req), String(req.params.number), req.body));
 });
 
 // ── The three-phase workflow on a request ──

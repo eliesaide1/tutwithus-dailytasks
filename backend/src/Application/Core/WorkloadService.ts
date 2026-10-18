@@ -1,4 +1,4 @@
-import { Meeting, Task, User, type UserDoc } from "../../Model";
+import { Meeting, Request, Task, User, type UserDoc } from "../../Model";
 import { canSeeAllTasks } from "../Common/permissions";
 import { addDays, weekStartMonday } from "../Shared/time";
 import { parseDateInput } from "../Shared/format";
@@ -22,6 +22,8 @@ export async function getWorkload(user: UserDoc, week: string | null) {
       .select("startMinute endMinute attendees")
       .lean(),
     Task.find({
+      // Tasks under a request still awaiting approval are not committed work yet.
+      request: { $in: await Request.distinct("_id", { "approval.status": "APPROVED" }) },
       assignee: { $ne: null },
       $or: [{ plannedWeek: { $gte: weekStart, $lt: weekEnd } }, { plannedWeek: null, dueDate: { $gte: weekStart, $lt: weekEnd } }],
     })

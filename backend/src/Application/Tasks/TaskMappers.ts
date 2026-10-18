@@ -80,7 +80,7 @@ export function projectLite(p: Lean | null | undefined) {
   return { id: String(p._id), code: p.code as string, name: p.name as string, color: p.color as string };
 }
 
-type Viewer = { id?: string; role: string };
+type Viewer = { id?: string; role: string; canApproveRequests?: boolean };
 
 export function serializeTask(t: Lean, viewer?: Viewer) {
   return {
@@ -147,6 +147,23 @@ export function serializePhases(r: Lean) {
   };
 }
 
+/** Approval state, plus whether this viewer is allowed to decide it. */
+export function serializeApproval(r: Lean, viewer?: Viewer) {
+  const a = (r.approval ?? {}) as Lean;
+  const status = (a.status as string) ?? "APPROVED";
+  const isAuthor = viewer ? idOf(r.createdBy) === viewer.id : false;
+  return {
+    status,
+    auto: !!a.auto,
+    bypassed: !!a.bypassed,
+    note: (a.note as string) ?? null,
+    decidedBy: idOf(a.decidedBy),
+    decidedAt: a.decidedAt ?? null,
+    // Nobody decides their own, whatever their role.
+    canDecide: status === "PENDING" && !!viewer?.canApproveRequests && !isAuthor,
+  };
+}
+
 export function serializeRequest(r: Lean, viewer?: Viewer) {
   return {
     id: String(r._id),
@@ -162,6 +179,7 @@ export function serializeRequest(r: Lean, viewer?: Viewer) {
     project: projectLite(r.project),
     owner: userLite(r.owner),
     createdBy: userLite(r.createdBy),
+    approval: serializeApproval(r, viewer),
     phases: serializePhases(r),
     canEdit: viewer ? canEditRequest(viewer, { owner: idOf(r.owner), createdBy: idOf(r.createdBy) }) : undefined,
   };

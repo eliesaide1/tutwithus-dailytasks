@@ -11,6 +11,12 @@ export type SessionUser = {
   avatarUrl: string | null;
   timezone: string;
   mustChangePassword: boolean;
+  /** May approve other people's new requests. */
+  canApproveRequests: boolean;
+  /** May tick "bypass" when the approver is unavailable. */
+  canBypassApproval: boolean;
+  /** Own requests open straight away, with no approval step. */
+  skipsRequestApproval: boolean;
   department: string | null;
   permissions: { isAdmin: boolean; isManager: boolean; canSeeAllTasks: boolean; canManageTasks: boolean };
 };
@@ -104,6 +110,7 @@ export type RequestSummary = {
   createdAt: string;
   project: ProjectLite;
   owner: UserLite | null;
+  approval: RequestApproval;
   phases: RequestPhases;
 };
 
@@ -142,6 +149,18 @@ export type Attachment = {
 };
 
 // ── The three-phase workflow on a request ──
+
+/** Whether a new request has been approved, and whether this viewer may decide it. */
+export type RequestApproval = {
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  /** Opened without review — the author skips approval, or ticked bypass. */
+  auto: boolean;
+  bypassed: boolean;
+  note: string | null;
+  decidedBy: string | null;
+  decidedAt: string | null;
+  canDecide: boolean;
+};
 
 export type PhaseName = "acceptance" | "analysis" | "development";
 export type PhaseAction = "accept" | "finalize" | "review" | "cancel";

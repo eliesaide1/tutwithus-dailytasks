@@ -11,6 +11,7 @@ import { useLookups } from "@/hooks/useLookups";
 import { AP_Button } from "@/components/AP_Button";
 import { AP_Attachments } from "@/components/AP_Attachments";
 import { AP_Card } from "@/components/AP_Card";
+import { AP_Checkbox } from "@/components/AP_Checkbox";
 import { AP_Field } from "@/components/AP_Field";
 import { AP_Input } from "@/components/AP_Input";
 import { AP_LinkButton } from "@/components/AP_LinkButton";
@@ -35,6 +36,8 @@ export default function NewRequestScreen() {
   const [nextKey, setNextKey] = useState(1);
   // Files picked per task row. The tasks don't exist yet, so these upload after create.
   const [files, setFiles] = useState<Record<number, File[]>>({});
+  // Offered only to people who may use it (Elie), for when the approver is away.
+  const [bypass, setBypass] = useState(false);
 
   const [uploading, setUploading] = useState(false);
   const create = useApiMutation((body: Record<string, unknown>) => CreateRequest(body), {
@@ -76,6 +79,7 @@ export default function NewRequestScreen() {
       type: get("type"),
       priority: get("priority"),
       dueDate: get("dueDate"),
+      bypassApproval: bypass,
       tasks,
     });
   }
@@ -227,6 +231,25 @@ export default function NewRequestScreen() {
               </div>
               <p className="mt-2 text-xs text-slate-500">Rows without a task title are ignored.</p>
             </div>
+
+            {!user.skipsRequestApproval && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-sm">
+                {user.canBypassApproval ? (
+                  <>
+                    <AP_Checkbox
+                      label="Bypass the Project Leader — open this request without waiting for approval"
+                      checked={bypass}
+                      onChange={(e) => setBypass(e.target.checked)}
+                    />
+                    <p className="mt-1 ml-6 text-xs text-slate-500">
+                      For when Gabriel is unavailable. Leave it unticked and the request waits for his approval.
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-slate-600">This request goes to Gabriel or Elie for approval before any work starts.</p>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end">
               <AP_Button type="submit" disabled={create.isPending || uploading}>

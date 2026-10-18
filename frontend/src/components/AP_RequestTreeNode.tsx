@@ -5,6 +5,7 @@ import type { TreeRequest } from "@/Shared/Types";
 import { useBackHere } from "@/hooks/useBack";
 import { AP_Avatar } from "./AP_Avatar";
 import { AP_Chevron } from "./AP_Chevron";
+import { AP_RequestApproval } from "./AP_RequestApproval";
 import { AP_RequestPhases } from "./AP_RequestPhases";
 import { AP_RequestStatusBadge } from "./AP_RequestStatusBadge";
 import { AP_TaskStatusBadge } from "./AP_TaskStatusBadge";
@@ -54,7 +55,9 @@ export function AP_RequestTreeNode({
           )}
           {r.status !== "OPEN" && <AP_RequestStatusBadge status={r.status} />}
         </summary>
-        {canManage && <AP_RequestPhases number={r.number} phases={r.phases} canManage={canManage} />}
+        <AP_RequestApproval number={r.number} approval={r.approval} />
+        {/* The workflow only starts once the request is real work. */}
+        {canManage && r.approval.status === "APPROVED" && <AP_RequestPhases number={r.number} phases={r.phases} canManage={canManage} />}
         {r.tasks.length === 0 ? (
           doneHidden > 0 ? (
             <p className="ml-6 inline-flex items-center gap-1 py-1 text-xs font-medium text-emerald-700">
