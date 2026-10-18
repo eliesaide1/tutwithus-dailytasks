@@ -85,6 +85,21 @@ Who can do what is stored as flags on the user — `canApproveRequests`,
 `skipsRequestApproval`, `canBypassApproval` — not as names, so the chain survives people
 changing roles or leaving.
 
+### Tasks raised for other people
+
+Anyone can raise a task for anyone, **including across departments** — the project-team
+restriction does not apply to who a task may be assigned to.
+
+What keeps that safe is a second gate: unless the author skips it (Gabriel), the task is
+created **pending** and is not posted. The assignee is not notified and does not see it;
+it counts towards nobody's week or workload, and stays out of the Done report. Only the
+author and Gabriel see it at all. Gabriel approves — and only then is the assignee told —
+or rejects with a reason the author is notified of.
+
+**Task approval is Gabriel's alone.** Requests take Gabriel *or* Elie; tasks take Gabriel,
+so Elie approving a task is refused. Driven by `canApproveTasks` / `skipsTaskApproval`,
+separate from the request flags, so either chain can change without touching the other.
+
 ## Request workflow
 
 Expanding a request in the tree shows three phases underneath it. Each is **activated**

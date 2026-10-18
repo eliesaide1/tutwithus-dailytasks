@@ -153,8 +153,8 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
                 ))}
               </ul>
             )}
-            {r.canEdit && (
-              <div className="border-t border-slate-100 px-5 py-3">
+            {/* Anyone may raise a task; unapproved ones are not posted. */}
+            <div className="border-t border-slate-100 px-5 py-3">
                 <button
                   type="button"
                   onClick={() => setAddingTask((v) => !v)}
@@ -191,8 +191,7 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
                     </div>
                   </form>
                 )}
-              </div>
-            )}
+            </div>
           </AP_Card>
 
           <AP_Card>

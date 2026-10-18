@@ -261,13 +261,18 @@ export const UpdatePhase = (number: number, phase: PhaseName, body: Body) => pat
 export const PhaseAction = (number: number, phase: PhaseName, action: PhaseActionName) =>
   post<Ok>(`/tasks/${number}/phases/${phase}/${action}`);
 
-export const AddTask = (number: number, task: Body) => post<{ id: string }>(`/tasks/${number}/tasks`, task);
+export const AddTask = (number: number, task: Body) => post<{ id: string; pending: boolean }>(`/tasks/${number}/tasks`, task);
 
 export const UpdateTask = (id: string, task: Body) => patch<Ok>(`/task-items/${id}`, task);
 
 export const SetTaskStatus = (id: string, status: string) => post<Ok>(`/task-items/${id}/status`, { status });
 
 export const DeleteTask = (id: string) => del<Ok>(`/task-items/${id}`);
+
+/** Approve a task raised for someone else, so it is posted to its assignee. */
+export const ApproveTask = (id: string) => post<Ok>(`/task-items/${id}/approve`);
+
+export const RejectTask = (id: string, note?: string) => post<Ok>(`/task-items/${id}/reject`, { note });
 
 // ── Task attachments ──
 //

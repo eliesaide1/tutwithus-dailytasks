@@ -29,7 +29,7 @@ export async function getCompletedReport(viewer: UserDoc, input: unknown) {
   const end = startOfDay(addDays(new Date(`${to}T00:00:00Z`), 1).toISOString().slice(0, 10), zone);
   if (end.getTime() - start.getTime() > 400 * 86_400_000) throw badRequest("Pick a period of at most about a year.");
 
-  const tasks = (await Task.find({ status: "DONE", completedAt: { $gte: start, $lt: end } })
+  const tasks = (await Task.find({ status: "DONE", "approval.status": "APPROVED", completedAt: { $gte: start, $lt: end } })
     .sort({ completedAt: -1 })
     .populate("assignee", "name avatarUrl title")
     .populate({ path: "request", select: "number title project", populate: { path: "project", select: "code name color" } })

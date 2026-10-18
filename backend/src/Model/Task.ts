@@ -33,6 +33,20 @@ const taskSchema = new Schema(
     createdBy: { type: ObjectId, ref: "User", default: null },
     meeting: { type: ObjectId, ref: "Meeting", default: null },
     attachments: { type: [attachmentSchema], default: [] },
+    // A task raised for someone else is not posted until Gabriel approves it: until then
+    // the assignee never sees it and it counts towards nobody's week.
+    approval: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ["PENDING", "APPROVED", "REJECTED"], default: "APPROVED" },
+          decidedBy: { type: ObjectId, ref: "User", default: null },
+          decidedAt: Date,
+          note: String,
+        },
+        { _id: false },
+      ),
+      default: () => ({ status: "APPROVED" }),
+    },
   },
   baseOptions(),
 );

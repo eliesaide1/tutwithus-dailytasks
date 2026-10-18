@@ -46,6 +46,9 @@ export async function seedPeople() {
     // Top of the approval chain: his own requests open straight away.
     canApproveRequests: true,
     skipsRequestApproval: true,
+    // Tasks raised for other people come to Gabriel; his own post straight away.
+    canApproveTasks: true,
+    skipsTaskApproval: true,
     timezone: "Asia/Beirut",
     weeklyCapacityMins: h(21),
     manager: charbel._id,

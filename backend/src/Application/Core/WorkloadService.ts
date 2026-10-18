@@ -24,6 +24,7 @@ export async function getWorkload(user: UserDoc, week: string | null) {
     Task.find({
       // Tasks under a request still awaiting approval are not committed work yet.
       request: { $in: await Request.distinct("_id", { "approval.status": "APPROVED" }) },
+      "approval.status": "APPROVED", // unposted tasks count towards nobody's capacity
       assignee: { $ne: null },
       $or: [{ plannedWeek: { $gte: weekStart, $lt: weekEnd } }, { plannedWeek: null, dueDate: { $gte: weekStart, $lt: weekEnd } }],
     })

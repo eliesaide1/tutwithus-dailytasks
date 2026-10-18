@@ -21,6 +21,8 @@ export function sessionUser(u: UserDoc) {
     canApproveRequests: !!u.canApproveRequests,
     canBypassApproval: !!u.canBypassApproval,
     skipsRequestApproval: !!u.skipsRequestApproval,
+    canApproveTasks: !!u.canApproveTasks,
+    skipsTaskApproval: !!u.skipsTaskApproval,
     department: u.department ? String(u.department) : null,
     permissions: permissionsOf(u),
   };

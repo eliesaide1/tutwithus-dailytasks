@@ -80,7 +80,30 @@ export function projectLite(p: Lean | null | undefined) {
   return { id: String(p._id), code: p.code as string, name: p.name as string, color: p.color as string };
 }
 
-type Viewer = { id?: string; role: string; canApproveRequests?: boolean };
+type Viewer = { id?: string; role: string; canApproveRequests?: boolean; canApproveTasks?: boolean };
+
+/**
+ * Tasks a person may see. Approved ones are everyone's; a pending one is visible only to
+ * whoever raised it and to whoever can approve it — never to the assignee, who must not
+ * learn about work that has not been posted yet.
+ */
+export function visibleTaskFilter(viewer: { id?: string; canApproveTasks?: boolean }) {
+  if (viewer.canApproveTasks) return { $or: [{ "approval.status": "APPROVED" }, { "approval.status": "PENDING" }] };
+  return { $or: [{ "approval.status": "APPROVED" }, { "approval.status": "PENDING", createdBy: viewer.id }] };
+}
+
+/** Approval state of a task, plus whether this viewer may decide it. */
+export function serializeTaskApproval(t: Lean, viewer?: Viewer) {
+  const a = (t.approval ?? {}) as Lean;
+  const status = (a.status as string) ?? "APPROVED";
+  const isAuthor = viewer ? idOf(t.createdBy) === viewer.id : false;
+  return {
+    status,
+    note: (a.note as string) ?? null,
+    decidedAt: a.decidedAt ?? null,
+    canDecide: status === "PENDING" && !!viewer?.canApproveTasks && !isAuthor,
+  };
+}
 
 export function serializeTask(t: Lean, viewer?: Viewer) {
   return {
@@ -97,6 +120,7 @@ export function serializeTask(t: Lean, viewer?: Viewer) {
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt,
     assignee: userLite(t.assignee),
+    approval: serializeTaskApproval(t, viewer),
     attachments: ((t.attachments ?? []) as Lean[]).map((a) => ({
       id: String(a._id),
       filename: a.filename as string,

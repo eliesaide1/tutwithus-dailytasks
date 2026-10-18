@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { CircleCheck, Pencil, Trash } from "lucide-react";
+import { Check, CircleCheck, Clock, Pencil, Trash, X } from "lucide-react";
 import { cn, formatShortDate } from "@/Shared/format";
-import { DeleteTask, UpdateTask } from "@/Shared/SharedService";
+import { ApproveTask, DeleteTask, RejectTask, UpdateTask } from "@/Shared/SharedService";
 import { formValues, hours } from "@/Shared/SharedFunctions";
 import type { TaskItem, TeamPerson } from "@/Shared/Types";
 import { useApiMutation } from "@/hooks/useApiMutation";
@@ -38,6 +38,8 @@ export function AP_TaskRow({
     onSuccess: () => setEditing(false),
   });
   const del = useApiMutation(() => DeleteTask(t.id), { invalidate: [...TASK_KEYS] });
+  const approve = useApiMutation(() => ApproveTask(t.id), { invalidate: [...TASK_KEYS] });
+  const rejectTask = useApiMutation((note: string) => RejectTask(t.id, note), { invalidate: [...TASK_KEYS] });
   const queryClient = useQueryClient();
   const refresh = () => TASK_KEYS.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
 
@@ -65,6 +67,35 @@ export function AP_TaskRow({
             {t.dueDate && <span>due {formatShortDate(t.dueDate)}</span>}
             {t.plannedWeek && <span>week of {formatShortDate(t.plannedWeek)}</span>}
           </p>
+          {t.approval.status === "PENDING" && (
+            <div className="mt-1 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50/70 px-2 py-1">
+              <Clock className="size-3.5 shrink-0 text-amber-600" />
+              <span className="text-xs text-amber-900">
+                {t.approval.canDecide ? "Raised for this person — not posted until you approve it." : "Waiting for Gabriel to approve. The assignee hasn't been told yet."}
+              </span>
+              {t.approval.canDecide && (
+                <span className="ml-auto flex gap-1.5">
+                  <AP_Button type="button" size="sm" disabled={approve.isPending || rejectTask.isPending} onClick={() => approve.mutate(undefined)}>
+                    <Check className="size-3" /> Approve
+                  </AP_Button>
+                  <AP_Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    disabled={approve.isPending || rejectTask.isPending}
+                    onClick={() => rejectTask.mutate(prompt("Why is this task not approved? (optional)") ?? "")}
+                  >
+                    <X className="size-3" /> Reject
+                  </AP_Button>
+                </span>
+              )}
+            </div>
+          )}
+          {t.approval.status === "REJECTED" && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs text-red-600">
+              <X className="size-3.5" /> Not approved{t.approval.note ? ` — ${t.approval.note}` : ""}
+            </p>
+          )}
           {t.blocker && t.status !== "DONE" && <p className="mt-1 text-xs text-red-700">Blocker: {t.blocker}</p>}
           {t.description && <p className="mt-1 text-xs whitespace-pre-wrap text-slate-600">{t.description}</p>}
           {/* Attaching follows canEdit: admins, or whoever the task belongs to. */}

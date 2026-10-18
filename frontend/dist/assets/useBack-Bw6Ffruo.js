@@ -1,1 +1,0 @@
-import{am as o}from"./index-CAmgi2O5.js";function m(r){const{pathname:a,search:e}=o();return{from:a+e,fromLabel:r}}function f(){var a;const r=o().state;return(a=r==null?void 0:r.from)!=null&&a.startsWith("/")&&r.fromLabel?{from:r.from,fromLabel:r.fromLabel}:null}export{f as a,m as u};

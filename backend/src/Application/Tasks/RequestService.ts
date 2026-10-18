@@ -16,6 +16,7 @@ import {
   idOf,
   requestInput,
   serializeRequest,
+  visibleTaskFilter,
   serializeTask,
   taskFields,
   taskInput,
@@ -92,7 +93,7 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
     Request.countDocuments({ ...filter, status: "WAITING_PREREQ" }),
   ]);
 
-  const tasks = await Task.find({ request: { $in: requests.map((r) => r._id) } })
+  const tasks = await Task.find({ request: { $in: requests.map((r) => r._id) }, ...visibleTaskFilter(user) })
     .sort({ order: 1, createdAt: 1 })
     .select("title status dueDate assignee request order")
     .populate("assignee", "name avatarUrl")
@@ -194,7 +195,7 @@ export async function getRequest(user: UserDoc, numberParam: string) {
       .populate("owner", USER_FIELDS)
       .populate("createdBy", "name")
       .lean(),
-    Task.find({ request: found._id }).sort({ order: 1, createdAt: 1 }).populate("assignee", "name avatarUrl").lean(),
+    Task.find({ request: found._id, ...visibleTaskFilter(user) }).sort({ order: 1, createdAt: 1 }).populate("assignee", "name avatarUrl").lean(),
     Comment.find({ request: found._id }).sort({ createdAt: 1 }).populate("author", USER_FIELDS).lean(),
     Activity.find({ link: `/tasks/${found.number}` }).sort({ createdAt: -1 }).limit(25).populate("actor", "name").lean(),
   ]);

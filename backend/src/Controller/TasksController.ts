@@ -87,6 +87,15 @@ tasksController.patch("/task-items/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// A task raised for someone else is not posted until it is approved.
+tasksController.post("/task-items/:id/approve", async (req, res) => {
+  res.json(await TaskService.approveTask(me(req), String(req.params.id)));
+});
+
+tasksController.post("/task-items/:id/reject", async (req, res) => {
+  res.json(await TaskService.rejectTask(me(req), String(req.params.id), req.body));
+});
+
 // ── Attachments on a task ──
 // The browser uploads straight to object storage, so the file never passes through here:
 // ask for a presigned PUT, upload, then confirm.

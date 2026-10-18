@@ -29,6 +29,10 @@ const userSchema = new Schema(
     canApproveRequests: { type: Boolean, default: false }, // may approve others' requests
     skipsRequestApproval: { type: Boolean, default: false }, // own requests open straight away
     canBypassApproval: { type: Boolean, default: false }, // may tick "bypass" when the approver is away
+    // Tasks raised for other people. Named separately from request approval because the
+    // two chains differ: requests take Gabriel or Elie, tasks take Gabriel.
+    canApproveTasks: { type: Boolean, default: false },
+    skipsTaskApproval: { type: Boolean, default: false }, // own tasks post straight away
   },
   baseOptions(["passwordHash"]),
 );

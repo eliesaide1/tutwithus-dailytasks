@@ -17,6 +17,10 @@ export type SessionUser = {
   canBypassApproval: boolean;
   /** Own requests open straight away, with no approval step. */
   skipsRequestApproval: boolean;
+  /** May approve tasks raised for other people. */
+  canApproveTasks: boolean;
+  /** Own tasks post straight away. */
+  skipsTaskApproval: boolean;
   department: string | null;
   permissions: { isAdmin: boolean; isManager: boolean; canSeeAllTasks: boolean; canManageTasks: boolean };
 };
@@ -119,6 +123,14 @@ export type TreeRequest = RequestSummary & {
 };
 export type TaskTree = { scope?: "all" | "mine"; waitingInfo: number; waitingPrereq: number; requests: TreeRequest[] };
 
+/** Whether a task raised for someone else has been posted yet. */
+export type TaskApproval = {
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  note: string | null;
+  decidedAt: string | null;
+  canDecide: boolean;
+};
+
 export type TaskItem = {
   id: string;
   title: string;
@@ -133,6 +145,7 @@ export type TaskItem = {
   completedAt: string | null;
   createdAt: string;
   assignee: UserLite | null;
+  approval: TaskApproval;
   attachments: Attachment[];
   canEdit: boolean; // may change the status
   canManage?: boolean; // may edit details / delete (admins only)

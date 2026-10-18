@@ -5,7 +5,7 @@ import { canSeeAllTasks } from "../Common/permissions";
 import { isId } from "../../Infrastructure/Database/database";
 import { addDays, utcToZoned, weekStartMonday } from "../Shared/time";
 import { toDateInput } from "../Shared/format";
-import { serializeTask, toMonday, type Lean } from "./TaskMappers";
+import { serializeTask, toMonday, visibleTaskFilter, type Lean } from "./TaskMappers";
 import { visibleRequestFilter } from "./ProjectTeam";
 
 export async function getMyWeek(viewer: UserDoc, q: Record<string, string | undefined>) {
@@ -32,7 +32,8 @@ export async function getMyWeek(viewer: UserDoc, q: Record<string, string | unde
   };
   // Outside the admins, only tasks in the viewer's own department's projects.
   const inVisible = await visibleRequestFilter(viewer);
-  const scope = inVisible ? { request: inVisible } : {};
+  // A pending task is not on anyone's week — not even its author's view of someone else.
+  const scope = { ...(inVisible ? { request: inVisible } : {}), "approval.status": "APPROVED" };
   const [weekTasks, overdue] = await Promise.all([
     Task.find({
       ...scope,
