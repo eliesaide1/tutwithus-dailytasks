@@ -1,0 +1,1 @@
+import{j as t}from"./index-CnYiyflw.js";import{A as o}from"./AP_Tabs-DAwfYkER.js";const e=[{key:"directory",label:"Directory",to:"/people"},{key:"chart",label:"Org Chart",to:"/org-chart"}];function i({active:r}){return t.jsx(o,{active:r,items:e})}export{i as A};

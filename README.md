@@ -48,7 +48,7 @@ Availability, recurring meetings, capacity and responsibilities are loaded from 
 | Dashboard | `/` | My open, due, overdue and blocked tasks; upcoming meetings in my time zone; announcements; activity; team overview for managers |
 | My week | `/my-week` | Weekly task board per person (Mon→Sun, overdue, planned with no due day), estimate vs capacity. Anyone can view anyone's week |
 | Tasks | `/tasks` | Tree view grouped by project, person or status (Project → Request → Tasks), with waiting-info and waiting-prerequisite counters and age or remaining time |
-| Request phases | `/tasks` | Expanding a request shows its workflow: **Acceptance** → **Development analysis** → **Solution development**. See [Request workflow](#request-workflow) |
+| Request phases | `/tasks` | Expanding a request shows its workflow: **Acceptance** → **Planning** → **Delivery**. Open to everyone who can see the request. See [Request workflow](#request-workflow) |
 | Attachments | `/tasks` | PDFs, Office documents, images, text and zips on any task. Uploaded straight from the browser to object storage |
 | Request detail | `/tasks/:number` | Status, priority, owner, tasks (assignee, estimate, due, planned week, blocker), comments, history |
 | Workload | `/workload` | Capacity − meetings − planned tasks per person per week |
@@ -150,7 +150,15 @@ separate decision, made with the request's own status control on `/tasks/:number
 handled with the client by email, so there is nothing to analyse or build, and both later
 phases stay locked.
 
-Admin-only, like every other change to a request.
+**Running the workflow is open to everyone**, not just admins. Whoever is doing the work
+accepts, plans and delivers it themselves rather than queueing behind Charbel, Elie or
+Gabriel — all three phases, on any request they can already see.
+
+That last part is the whole limit: a request a person cannot see is a `404` here exactly
+as it is everywhere else, so the gate is the existing visibility rule — you own it, you
+raised it, you have a task in it, or it is in your department's projects — not a role.
+Editing a request's fields, adding or reassigning its tasks, and deleting it all stay
+admin-only; the phases no longer do.
 
 ## Attachments
 

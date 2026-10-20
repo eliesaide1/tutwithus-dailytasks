@@ -10,16 +10,20 @@
 // cannot be touched until the one before it is done, so the order is enforced here
 // rather than trusted from the client.
 //
+// Running the workflow is open to everyone who can see the request: the people doing the
+// work accept, plan and deliver it themselves rather than queueing behind an admin. What
+// stays admin-only is editing the request itself — its fields, its tasks and deleting it.
+//
 // The one shortcut: a request accepted as Support finishes at acceptance — it is handled
 // with the client directly by email, so there is nothing to analyse or build.
 import { z } from "zod";
 import { Request, type UserDoc } from "../../Model";
-import { badRequest, forbidden } from "../Common/errors";
+import { badRequest } from "../Common/errors";
 import { parse } from "../Common/validation";
-import { canManageTasks } from "../Common/permissions";
 import { logActivity } from "../Common/activity";
 import { zDate } from "../Common/validation";
 import { findRequest } from "./TaskMappers";
+import { requestAccess } from "./RequestService";
 import { completeTasksOf } from "./TaskCompletion";
 
 export const PHASES = ["acceptance", "analysis", "development"] as const;
@@ -46,11 +50,6 @@ const analysisInput = z.object({
   developmentHours: z.coerce.number().min(0).max(2000).nullable().optional(),
 });
 
-/** Admins own the workflow, same as every other change to a request. */
-function assertCanRun(user: UserDoc) {
-  if (!canManageTasks(user)) throw forbidden("Only Charbel, Elie and Gabriel can move a request through its phases.");
-}
-
 type Phases = {
   acceptance: { activated: boolean; status: string; acceptAs: string | null };
   analysis: { activated: boolean; status: string };
@@ -70,8 +69,10 @@ export function isPhaseOpen(phases: Phases, phase: PhaseName) {
 }
 
 async function load(user: UserDoc, numberParam: string, phase: PhaseName) {
-  assertCanRun(user);
   const r = await findRequest(numberParam);
+  // Anyone who can see the request may move it through its phases; a request you cannot
+  // see is a 404 here exactly as it is everywhere else.
+  await requestAccess(user, r);
   if (!PHASES.includes(phase)) throw badRequest("Unknown phase.");
   if (!isPhaseOpen(r.phases as unknown as Phases, phase)) {
     throw badRequest(`${PHASE_LABELS[phase]} isn't open yet — finish the phase before it first.`);
@@ -106,7 +107,7 @@ export async function update(user: UserDoc, numberParam: string, phase: PhaseNam
     r.phases.analysis.analysisHours = body.analysisHours ?? undefined;
     r.phases.analysis.developmentHours = body.developmentHours ?? undefined;
   } else {
-    throw badRequest("Solution development has no fields to edit.");
+    throw badRequest("Delivery has no fields to edit.");
   }
   await r.save();
   return { ok: true };

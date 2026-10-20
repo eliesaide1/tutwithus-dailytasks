@@ -18,15 +18,12 @@ export function AP_RequestTreeNode({
   now,
   showProject,
   doneHidden = 0,
-  canManage = false,
 }: {
   r: TreeRequest;
   now: Date;
   showProject: boolean;
   /** Done tasks left out of the list (the tree only shows what is still to do). */
   doneHidden?: number;
-  /** Admins see the three-phase workflow under the request. */
-  canManage?: boolean;
 }) {
   const backHere = useBackHere("Tasks");
   const closed = r.status === "DONE" || r.status === "CANCELLED";
@@ -57,7 +54,7 @@ export function AP_RequestTreeNode({
         </summary>
         <AP_RequestApproval number={r.number} approval={r.approval} />
         {/* The workflow only starts once the request is real work. */}
-        {canManage && r.approval.status === "APPROVED" && <AP_RequestPhases number={r.number} phases={r.phases} canManage={canManage} />}
+        {r.approval.status === "APPROVED" && <AP_RequestPhases number={r.number} phases={r.phases} />}
         {r.tasks.length === 0 ? (
           doneHidden > 0 ? (
             <p className="ml-6 inline-flex items-center gap-1 py-1 text-xs font-medium text-emerald-700">

@@ -94,8 +94,11 @@ function PhaseShell({
  * Acceptance -> Planning -> Delivery. Each is activated, filled in, then closed with an
  * action. The names describe what the step decides, so they read the same whether the
  * work is software, marketing or client support.
+ *
+ * Open to everyone who can see the request — whoever is doing the work accepts, plans and
+ * delivers it. The server checks the same thing, so hiding nothing here hides nothing real.
  */
-export function AP_RequestPhases({ number, phases, canManage }: { number: number; phases: RequestPhases; canManage: boolean }) {
+export function AP_RequestPhases({ number, phases }: { number: number; phases: RequestPhases }) {
   const [acceptAs, setAcceptAs] = useState<string>(phases.acceptance.acceptAs ?? "");
   const [reqType, setReqType] = useState<string>(phases.acceptance.requestType ?? "");
   const [delivery, setDelivery] = useState(toDateInput(phases.analysis.deliveryDate));
@@ -115,8 +118,6 @@ export function AP_RequestPhases({ number, phases, canManage }: { number: number
   // Acceptance needs both dropdowns before Accept is allowed.
   const canAccept = a.activated && !!acceptAs && !!reqType;
   const canFinalizeAnalysis = an.activated && !!delivery && analysisH !== "" && devH !== "";
-
-  if (!canManage) return null;
 
   return (
     <div className="mt-2 ml-6 space-y-2">
