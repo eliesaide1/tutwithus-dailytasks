@@ -70,7 +70,7 @@ function buildIcs(
     const description = [m.purpose, m.agenda].filter(Boolean).join("\n\n");
     lines.push(
       "BEGIN:VEVENT",
-      `UID:${m.id}@portal.tutwithus.com`,
+      `UID:${m.id}@twtasks.tutwithus.com`,
       `DTSTAMP:${now}`,
       `DTSTART;TZID=${m.timezone}:${localStamp(first, m.startMinute)}`,
       `DTEND;TZID=${m.timezone}:${localStamp(first, m.endMinute)}`,

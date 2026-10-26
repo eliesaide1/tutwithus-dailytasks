@@ -10,7 +10,7 @@ import { isId } from "../../Infrastructure/Database/database";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "../Shared/constants";
 import { findRequest, idOf, taskFields, taskInput } from "./TaskMappers";
 import { assertRefs } from "./RequestService";
-import { assertInTeam, getProjectTeam } from "./ProjectTeam";
+import { getProjectTeam } from "./ProjectTeam";
 import { dropAttachments } from "./AttachmentCleanup";
 
 /**
@@ -124,7 +124,9 @@ export async function updateTask(user: UserDoc, id: string, input: unknown) {
   if (!canManageTasks(user)) throw forbidden("Only Charbel, Elie and Gabriel can edit tasks.");
   const body = parse(taskInput, input);
   await assertRefs({ assignees: [body.assignee] });
-  assertInTeam(await getProjectTeam(String(request.project)), body.assignee);
+  // No project-team check. addTask has never had one — a task may be raised for anyone,
+  // in any department — and keeping one here meant an existing cross-department task
+  // could not be saved at all: editing its due date was refused because of its assignee.
 
   const previousAssignee = idOf(task.assignee);
   task.set(taskFields(body));
@@ -161,14 +163,14 @@ export async function deleteTask(user: UserDoc, id: string) {
   await logActivity({ actor: user.id, entity: "Task", entityId: task.id, action: "deleted", summary: `deleted task "${task.title}" from #${request.number}`, link: `/tasks/${request.number}` });
 }
 
-/** Hand a task to someone on the project's team. Allowed for admins and the request's owner. */
+/** Hand a task to someone. Allowed for admins and the request's owner. */
 export async function assignTask(user: UserDoc, id: string, input: unknown) {
   const { task, request } = await findTask(id);
   if (!canManageTasks(user) && !sameId(idOf(request.owner), user.id)) {
     throw forbidden("Only the request's owner (the department manager) or an admin can reassign this task.");
   }
   const { assignee } = parse(z.object({ assignee: zId }), input);
-  assertInTeam(await getProjectTeam(String(request.project)), assignee);
+  // Same reasoning as updateTask: who may hold a task is not a function of the project.
   if (sameId(idOf(task.assignee), assignee)) return { ok: true };
 
   task.assignee = assignee as unknown as typeof task.assignee;

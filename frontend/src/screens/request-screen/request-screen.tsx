@@ -22,6 +22,7 @@ import { AP_QueryState } from "@/components/AP_QueryState";
 import { AP_Textarea } from "@/components/AP_Textarea";
 import { AP_PriorityBadge } from "@/components/AP_PriorityBadge";
 import { AP_RequestStatusBadge } from "@/components/AP_RequestStatusBadge";
+import { AP_RequestApproval } from "@/components/AP_RequestApproval";
 import { AP_RequestFields } from "@/components/AP_RequestFields";
 import { AP_StatusSelect } from "@/components/AP_StatusSelect";
 import { AP_TaskFields } from "@/components/AP_TaskFields";
@@ -55,10 +56,13 @@ export default function RequestScreen() {
 
 function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActivity[] }) {
   const navigate = useNavigate();
-  const { projects } = useLookups();
-  // Tasks of this request can only go to its project's team (department manager + their people).
+  const { projects, users } = useLookups();
+  // Anyone may hold a task, in any department, so the picker offers everyone. Limiting it
+  // to the project's team silently blanked the assignee of a cross-department task: no
+  // option matched, the browser fell back to "Unassigned", and saving an unrelated field
+  // quietly dropped the person it belonged to.
   const team = useProjectTeam(r.project.id);
-  const people = (team.data?.members ?? []).map((p) => ({ id: p.id, name: personWithTitle(p) }));
+  const people = users.map((p) => ({ id: p.id, name: personWithTitle(p) }));
   const [editingRequest, setEditingRequest] = useState(false);
   const [addingTask, setAddingTask] = useState(false);
   // Files picked before the task exists; uploaded once AddTask returns its id.
@@ -128,6 +132,10 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
           )}
         </div>
       </div>
+
+      {/* The approval decision belongs here too, not only in the tree: the link in the
+          approval email lands on this page. */}
+      <AP_RequestApproval number={r.number} approval={r.approval} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">

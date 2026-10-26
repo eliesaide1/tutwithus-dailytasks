@@ -1,1 +1,0 @@
-import{j as o}from"./index-CtsPpKiw.js";import{A as t}from"./AP_Badge-DRaETAGM.js";import{e as s}from"./constants-6cxhPjQ3.js";const a={LOW:"slate",MEDIUM:"blue",HIGH:"amber",URGENT:"red"};function p({priority:r}){const e=r;return o.jsx(t,{tone:a[e]??"slate",children:s[e]??r})}export{p as A};

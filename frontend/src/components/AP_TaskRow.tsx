@@ -32,6 +32,11 @@ export function AP_TaskRow({
 }) {
   // Admins reassign through the edit form; the manager gets the quick picker.
   const quickAssign = canAssign && !t.canManage && team.length > 0;
+  // A task held by someone outside the project's team still has to show who holds it,
+  // or the picker renders blank and reads as unassigned.
+  const assignable = t.assignee && !team.some((p) => p.id === t.assignee!.id)
+    ? [{ ...t.assignee, title: t.assignee.title ?? "" }, ...team]
+    : team;
   const [editing, setEditing] = useState(false);
   const update = useApiMutation((body: Record<string, unknown>) => UpdateTask(t.id, body), {
     invalidate: [...TASK_KEYS],
@@ -54,7 +59,7 @@ export function AP_TaskRow({
           <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <span>{t.kind}</span>
             {quickAssign ? (
-              <AP_AssigneeSelect taskId={t.id} current={t.assignee?.id ?? null} team={team} />
+              <AP_AssigneeSelect taskId={t.id} current={t.assignee?.id ?? null} team={assignable} />
             ) : t.assignee ? (
               <span className="inline-flex items-center gap-1">
                 <AP_Avatar name={t.assignee.name} src={t.assignee.avatarUrl} size={16} />

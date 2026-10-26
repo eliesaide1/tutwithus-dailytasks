@@ -58,7 +58,7 @@ Availability, recurring meetings, capacity and responsibilities are loaded from 
 | Tasks | `/tasks` | Tree view grouped by project, person or status (Project → Request → Tasks), with waiting-info and waiting-prerequisite counters and age or remaining time |
 | Request phases | `/tasks` | Expanding a request shows its workflow: **Acceptance** → **Planning** → **Delivery**. Open to everyone who can see the request. See [Request workflow](#request-workflow) |
 | Attachments | `/tasks` | PDFs, Office documents, images, text and zips on any task. Uploaded straight from the browser to object storage |
-| Request detail | `/tasks/:number` | Status, priority, owner, tasks (assignee, estimate, due, planned week, blocker), comments, history |
+| Request detail | `/tasks/:number` | Status, priority, owner, tasks (assignee, estimate, due, planned week, blocker), comments, history. Approve or reject a pending request here too — it is where the approval email links |
 | Workload | `/workload` | Capacity − meetings − planned tasks per person per week |
 | Org chart | `/org-chart` | Interactive tree with search, depth, zoom/pan, team filter and print/export |
 | Directory / profiles | `/people` | Contact info, local time, manager and reports, responsibilities, availability |
@@ -120,6 +120,13 @@ or rejects with a reason the author is notified of.
 Gabriel is told **by email** as well as in the app, and on approval so is the assignee, so
 neither has to be watching the portal for work to move. See
 [Approval emails](#emails).
+
+Who may hold a task is **not** a function of the project: raising, editing and
+reassigning all accept anyone. Keeping the restriction on editing meant an existing
+cross-department task could not be saved at all — changing its due date was refused
+because of its assignee — and, worse, the edit form only offered the project's team, so no
+option matched the real assignee, the browser fell back to *Unassigned*, and saving an
+unrelated field quietly dropped the person the task belonged to.
 
 **Task approval is Gabriel's alone.** Requests take Gabriel *or* Elie; tasks take Gabriel,
 so Elie approving a task is refused. Driven by `canApproveTasks` / `skipsTaskApproval`,
