@@ -153,10 +153,50 @@ export async function mailPhaseChanged(opts: {
   const actor = (await recipients([opts.actor.id]))[0];
   await sendMail({
     to,
+    // Copied to themselves so the step lands in their own inbox as a record, not only in
+    // Sent. Dropped when they are an admin and already on the To line.
+    cc: actor?.email,
     from: actor ? { name: actor.name, email: actor.email } : undefined,
     subject: `${ref(opts.request)} — ${opts.headline}`,
     text:
       `${opts.actor.name} ${opts.detail}\n\n` +
+      `Request: ${ref(opts.request)}\n\n` +
+      `Open it here: ${link(opts.request.number)}` +
+      signature,
+  });
+}
+
+/**
+ * The request's own status was changed by hand — Open, Waiting info, Done and so on, as
+ * opposed to a phase step.
+ *
+ * Addressed to the person in charge of the request, because it is their work that just
+ * changed underneath them, with the admins copied so the three answerable for delivery
+ * keep the same view they get from the phases. Sent as whoever made the change, so a
+ * reply reaches them and not a shared mailbox.
+ */
+export async function mailRequestStatusChanged(opts: {
+  request: RequestLike;
+  /** Human label, e.g. "Waiting info". */
+  status: string;
+  previous: string;
+  ownerId: Ref;
+  actor: { id?: string; name: string };
+}) {
+  const admins = await User.find({ role: "ADMIN", active: true }).select("email").lean();
+  const actor = (await recipients([opts.actor.id]))[0];
+  const owner = (await recipients([opts.ownerId]))[0];
+  // With nobody in charge the admins are the audience, so the news still reaches someone.
+  const cc = [...admins.map((a) => a.email), actor?.email].filter((e): e is string => !!e);
+  const to = owner ? [owner.email] : cc;
+  if (!to.length) return;
+  await sendMail({
+    to,
+    cc: owner ? cc : undefined,
+    from: actor ? { name: actor.name, email: actor.email } : undefined,
+    subject: `${ref(opts.request)} — ${opts.status}`,
+    text:
+      `${opts.actor.name} changed the status of this request from ${opts.previous} to ${opts.status}.\n\n` +
       `Request: ${ref(opts.request)}\n\n` +
       `Open it here: ${link(opts.request.number)}` +
       signature,
@@ -209,22 +249,19 @@ export async function mailRequestApproved(opts: {
 }
 
 /**
- * Rejected. Both the author and the person who would have been in charge are told —
- * the mirror of approval, which tells the same two people.
+ * Rejected — the author alone, from the shared mailbox.
  *
- * What the owner gets is only the decision, never the request: approval is what hands
- * someone work, so a rejection must not read like an assignment. The wording is neutral
- * about who is reading, because the author and the owner are often not the same person
- * and are sometimes the same one.
+ * Not the person who would have owned it: approval is what makes a request somebody's
+ * work, so a rejected one never became theirs and there is nothing to tell them about.
+ * They hear about a request when it is approved, not before.
  */
 export async function mailRequestRejected(opts: {
   request: RequestLike;
   approver: { name: string };
   authorId: Ref;
-  ownerId: Ref;
   note?: string | null;
 }) {
-  const to = await recipients([opts.authorId, opts.ownerId]);
+  const to = await recipients([opts.authorId]);
   if (!to.length) return;
   await sendMail({
     to: to.map((r) => r.email),

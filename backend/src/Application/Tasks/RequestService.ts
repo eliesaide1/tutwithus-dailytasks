@@ -5,7 +5,7 @@ import { badRequest, forbidden, notFound } from "../Common/errors";
 import { parse } from "../Common/validation";
 import { canEditRequest, canManageTasks, canSeeAllTasks, sameId } from "../Common/permissions";
 import { logActivity, notify } from "../Common/activity";
-import { mailRequestRaised } from "../Common/mail";
+import { mailRequestRaised, mailRequestStatusChanged } from "../Common/mail";
 import { isId } from "../../Infrastructure/Database/database";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "../Shared/constants";
 import { dropAttachments } from "./AttachmentCleanup";
@@ -251,6 +251,7 @@ export async function setRequestStatus(user: UserDoc, numberParam: string, input
   if (r.status === status) return;
 
   const closed = status === "DONE" || status === "CANCELLED";
+  const previous = REQUEST_STATUS_LABELS[r.status as keyof typeof REQUEST_STATUS_LABELS] ?? r.status;
   r.status = status;
   r.closedAt = closed ? new Date() : undefined;
   await r.save();
@@ -260,6 +261,13 @@ export async function setRequestStatus(user: UserDoc, numberParam: string, input
   const link = `/tasks/${r.number}`;
   await logActivity({ actor: user.id, entity: "Request", entityId: r.number, action: "status", summary: `set request #${r.number} to ${REQUEST_STATUS_LABELS[status]}`, link });
   await notify({ user: r.owner, actor: user.id, title: `#${r.number} is now ${REQUEST_STATUS_LABELS[status]}`, body: r.title, link });
+  await mailRequestStatusChanged({
+    request: r,
+    status: REQUEST_STATUS_LABELS[status],
+    previous,
+    ownerId: r.owner,
+    actor: user,
+  });
 }
 
 export async function deleteRequest(user: UserDoc, numberParam: string) {

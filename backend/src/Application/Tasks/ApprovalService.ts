@@ -87,13 +87,11 @@ export async function reject(user: UserDoc, numberParam: string, input: unknown)
     summary: `rejected request #${r.number} "${r.title}"${note ? ` — ${note}` : ""}`,
     link,
   });
+  // Only the author. The person who would have owned it is deliberately left out: nothing
+  // was ever handed to them, so there is nothing for them to be told about. Approval is
+  // what makes a request somebody's work — a rejection means it never became theirs.
   await notify({ user: r.createdBy, actor: user.id, title: `#${r.number} was not approved`, body: note || r.title, link });
-  // The person who would have owned it hears the decision too — but only the decision.
-  // Approval is what hands someone work; a rejection must never read like an assignment.
-  if (r.owner && String(r.owner) !== String(r.createdBy ?? "")) {
-    await notify({ user: r.owner, actor: user.id, title: `#${r.number} was not approved`, body: note || r.title, link });
-  }
-  await mailRequestRejected({ request: r, approver: user, authorId: r.createdBy, ownerId: r.owner, note });
+  await mailRequestRejected({ request: r, approver: user, authorId: r.createdBy, note });
   return { ok: true };
 }
 

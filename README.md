@@ -132,17 +132,16 @@ in-app, because an inbox that fills with portal noise stops being read.
 | Gabriel rejects it | **Whoever raised it** | With the reason he gave |
 | A new request is raised | **Its approvers** (Gabriel, or Gabriel and Elie) | Same gate, one level up |
 | A request is approved | **Its author and its new owner** | It is live work now and its Acceptance phase is open |
-| A request is rejected | **Its author and the person who would have owned it** | The same two people, so the decision reaches whoever was expecting the work |
+| A request is rejected | **Its author** | Approval is what makes a request somebody's work, so a rejected one never became the owner's and there is nothing to tell them |
 
 Every message carries the request's `#number`, the task, its due date and estimate, and a
 link straight to it.
 
-**A rejection sends the decision, never the request.** Approval is what hands somebody
-work, so the owner's copy says what was decided and why, and states plainly that nothing
-has been assigned — it must not read like an assignment. Author and owner being the same
-person gets one copy, not two.
+**A rejection goes to the author alone** — not to the person who would have owned it. They
+hear about a request when it is approved, which is the moment it becomes theirs; before
+that there is nothing of theirs to report on.
 
-**A rejected task is the exception: only its author hears.** The assignee was never told
+**A rejected task is the same:** only its author hears. The assignee was never told
 the task existed — that is the whole point of holding it pending — so telling them now
 that work they never knew about has been cancelled would leak exactly what the gate
 exists to withhold.
@@ -162,12 +161,19 @@ follow a request through the pipeline without opening the portal.
 | Delivered | `#42 … — delivered` |
 | Any phase cancelled | `#42 … — Planning cancelled` |
 
+Changing a request's **status** by hand — Open, Waiting info, Done — emails the same
+circle from the other direction: addressed to the person in charge of the request, since
+it is their work that just changed, with the admins Cc'd. Also sent as whoever made the
+change. With nobody in charge the admins are addressed instead, so the news still reaches
+someone.
+
 Addressed to the **role, not to three names**, so it survives someone joining, leaving or
 changing job — the same reasoning as the approval flags.
 
-**Sent as the person who took the step**, so it arrives under their name and a reply goes
-back to them: the admins are reading a report from a colleague, not a notice from a
-system. The wording is the same string that goes into the activity log, so the two can
+**Sent as the person who took the step**, who is also Cc'd so it lands in their own inbox
+as a record rather than only in Sent. It arrives under their name and a reply goes back to
+them: the admins are reading a report from a colleague, not a notice from a system. An
+admin acting on their own request is already addressed and is not copied twice. The wording is the same string that goes into the activity log, so the two can
 never drift apart.
 
 Sending as somebody else is done the only way that survives a mail server's spam checks:

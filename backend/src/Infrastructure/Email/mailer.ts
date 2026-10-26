@@ -62,11 +62,14 @@ function fromHeader(from: Mail["from"]) {
  * to an empty address list.
  */
 export async function sendMail(mail: Mail): Promise<boolean> {
-  const to = (Array.isArray(mail.to) ? mail.to : [mail.to]).filter(Boolean);
+  const list = (v: string | string[] | undefined) => [...new Set((Array.isArray(v) ? v : v ? [v] : []).filter(Boolean))];
+  const to = list(mail.to);
   if (!to.length) return false;
   if (!isEmailConfigured()) return false;
-  // Nobody is copied on a message they are already addressed on.
-  const cc = (Array.isArray(mail.cc) ? mail.cc : mail.cc ? [mail.cc] : []).filter((a) => a && !to.includes(a));
+  // Nobody appears twice, and nobody is copied on a message they are already addressed
+  // on. Both happen naturally: an admin acting on their own request is in the actor list
+  // and the admin list at once.
+  const cc = list(mail.cc).filter((a) => !to.includes(a));
 
   try {
     await transporter().sendMail({
