@@ -29,10 +29,32 @@ function transporter() {
 
 export type Mail = {
   to: string | string[];
+  /** Copied in rather than addressed — used for the person whose action triggered this. */
+  cc?: string | string[];
+  /**
+   * Send as the person who caused this, so it lands in the reader's inbox under their
+   * name and replies go back to them rather than to a shared mailbox. Only honoured for
+   * addresses on the same domain as the authenticated mailbox — see sendMail.
+   */
+  from?: { name: string; email: string };
   subject: string;
   /** Plain-text body. The HTML part is generated from it, so write it readably. */
   text: string;
 };
+
+const domainOf = (address: string) => address.split("@")[1]?.toLowerCase() ?? "";
+
+/**
+ * The From header to use. Sending as someone else only survives SPF/DKIM when the address
+ * is on the domain we are authenticated for — tutwithus.com signing for tutwithus.com.
+ * Anything else silently falls back to the shared mailbox rather than risking a message
+ * that lands in spam or is refused outright.
+ */
+function fromHeader(from: Mail["from"]) {
+  const s = config.smtp!;
+  if (!from?.email || domainOf(from.email) !== domainOf(s.user)) return s.from;
+  return `"${from.name.replace(/["\\]/g, "")}" <${from.email}>`;
+}
 
 /**
  * Sends one message. Returns whether it went out, so callers can log without branching
@@ -43,11 +65,22 @@ export async function sendMail(mail: Mail): Promise<boolean> {
   const to = (Array.isArray(mail.to) ? mail.to : [mail.to]).filter(Boolean);
   if (!to.length) return false;
   if (!isEmailConfigured()) return false;
+  // Nobody is copied on a message they are already addressed on.
+  const cc = (Array.isArray(mail.cc) ? mail.cc : mail.cc ? [mail.cc] : []).filter((a) => a && !to.includes(a));
 
   try {
     await transporter().sendMail({
-      from: config.smtp!.from,
+      from: fromHeader(mail.from),
+      sender: config.smtp!.user,
+      ...(mail.from?.email ? { replyTo: mail.from.email } : {}),
       to,
+      ...(cc.length ? { cc } : {}),
+      // Set explicitly, because nodemailer would otherwise take the envelope from the
+      // From header — and a server that authenticated as info@ trying to post as somebody
+      // else is what relay abuse looks like, so the host refuses it. The envelope stays
+      // the mailbox we actually signed in as: it is what SPF is checked against and where
+      // bounces go, while the From header still reads as the person who acted.
+      envelope: { from: config.smtp!.user, to: [...to, ...cc] },
       subject: mail.subject,
       text: mail.text,
       html: htmlFrom(mail.text),

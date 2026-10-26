@@ -21,6 +21,7 @@ import { Request, type UserDoc } from "../../Model";
 import { badRequest } from "../Common/errors";
 import { parse } from "../Common/validation";
 import { logActivity } from "../Common/activity";
+import { mailPhaseChanged } from "../Common/mail";
 import { zDate } from "../Common/validation";
 import { findRequest } from "./TaskMappers";
 import { requestAccess } from "./RequestService";
@@ -83,6 +84,17 @@ async function load(user: UserDoc, numberParam: string, phase: PhaseName) {
 const note = (r: { number: number }, summary: string, user: UserDoc) =>
   logActivity({ actor: user.id, entity: "Request", entityId: r.number, action: "updated", summary, link: `/tasks/${r.number}` });
 
+/**
+ * A phase step: logged like any other change, and emailed to the admins so the people
+ * answerable for delivery can follow a request through the pipeline without watching the
+ * portal. `detail` continues from the actor's name in both the log and the email, so the
+ * two never drift apart.
+ */
+async function step(r: { number: number; title: string }, detail: string, headline: string, user: UserDoc) {
+  await note(r, detail, user);
+  await mailPhaseChanged({ request: r, headline, detail, actor: user });
+}
+
 /** Opens a phase for editing. Until then its fields and buttons stay disabled. */
 export async function activate(user: UserDoc, numberParam: string, phase: PhaseName) {
   const r = await load(user, numberParam, phase);
@@ -138,7 +150,12 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
     p.actedBy = null;
     p.actedAt = undefined;
     await r.save();
-    await note(r, `closed ${PHASE_LABELS[phase]} on #${r.number} without ${phase === "acceptance" ? "accepting" : "finalizing"}`, user);
+    await step(
+      r,
+      `closed ${PHASE_LABELS[phase]} on #${r.number} without ${phase === "acceptance" ? "accepting" : "finalizing"}`,
+      `${PHASE_LABELS[phase]} cancelled`,
+      user,
+    );
     return { ok: true };
   }
 
@@ -154,12 +171,17 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
       r.closedAt = new Date();
       await r.save();
       await completeTasksOf(r, user, r.closedAt);
-      await note(r, `accepted #${r.number} as support — closed at client level`, user);
+      await step(r, `accepted #${r.number} as support — closed at client level`, "accepted as Support, closed", user);
       return { ok: true, closed: true };
     }
     r.status = "IN_PROGRESS";
     await r.save();
-    await note(r, `accepted #${r.number} as ${acceptAs === "ISSUE" ? "an issue" : "a new request"} (${requestType.toLowerCase()})`, user);
+    await step(
+      r,
+      `accepted #${r.number} as ${acceptAs === "ISSUE" ? "an issue" : "a new request"} (${requestType.toLowerCase()}). Planning is now open.`,
+      "accepted — now in Planning",
+      user,
+    );
     return { ok: true };
   }
 
@@ -172,7 +194,13 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
     stamp();
     if (!r.dueDate) r.dueDate = a.deliveryDate;
     await r.save();
-    await note(r, `finalized the analysis of #${r.number} — delivery ${a.deliveryDate.toISOString().slice(0, 10)}`, user);
+    await step(
+      r,
+      `finalized Planning on #${r.number} — delivery ${a.deliveryDate.toISOString().slice(0, 10)}, ` +
+        `preparation ${a.analysisHours} h, execution ${a.developmentHours} h. Delivery is now open.`,
+      "planned — now in Delivery",
+      user,
+    );
     return { ok: true };
   }
 
@@ -181,7 +209,7 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
     r.phases.development.status = "REVIEW";
     r.phases.development.reviewAt = new Date();
     await r.save();
-    await note(r, `sent #${r.number} for review`, user);
+    await step(r, `sent #${r.number} for review`, "under review", user);
     return { ok: true };
   }
   if (action !== "finalize") throw badRequest("Delivery can be sent for review, finalized or cancelled.");
@@ -192,6 +220,6 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
   await r.save();
   // The Done report counts tasks, so delivering the request completes the work in it.
   await completeTasksOf(r, user, r.closedAt);
-  await note(r, `finalized #${r.number} — delivered`, user);
+  await step(r, `finalized #${r.number} — delivered. Any task still open was completed with it.`, "delivered", user);
   return { ok: true, closed: true };
 }

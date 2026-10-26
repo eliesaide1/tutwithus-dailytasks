@@ -39,7 +39,7 @@ Every seeded account uses the temporary password `TutWithUs!2026`. You must chan
 | Rodolphe Najm | r.najm@tutwithus.com | Cross-department Support | Member |
 | Theresa Ghanem | t.ghanem@tutwithus.com | Content Creator (reports to Thiago) | Member |
 
-The address is both the sign-in name and where [approval emails](#approval-emails) land,
+The address is both the sign-in name and where [approval emails](#emails) land,
 so there is only one per person and it has to be a real mailbox. **`t.ghanem@` does not
 exist yet** — create it in the Titan panel or Theresa's approval emails bounce.
 
@@ -66,7 +66,7 @@ Availability, recurring meetings, capacity and responsibilities are loaded from 
 | Schedule | `/schedule` | Live week calendar, team availability, meetings with RSVP, "Find a time", `.ics` export. DST-aware time zone conversion |
 | Announcements | `/announcements` | Pinned team news with optional notify-all |
 | Notifications | `/notifications` | Assignment, comment and meeting notifications |
-| Approval emails | — | Gabriel is emailed when a task is raised for someone; the assignee is emailed when he approves it. See [Approval emails](#approval-emails) |
+| Emails | — | Approvals go to whoever must act; every workflow step goes to the admins, Cc'ing whoever took it. See [Emails](#emails) |
 | Done report | `/admin/reports` | Admins only: every task completed this week, last week, this month, last month or between two dates, by person and by project, with hours and on-time rate. Export to Excel (CSV) or print |
 | Admin | `/admin/*` | Users and access (create accounts, reset passwords, roles), projects, activity log |
 
@@ -111,17 +111,19 @@ or rejects with a reason the author is notified of.
 
 Gabriel is told **by email** as well as in the app, and on approval so is the assignee, so
 neither has to be watching the portal for work to move. See
-[Approval emails](#approval-emails).
+[Approval emails](#emails).
 
 **Task approval is Gabriel's alone.** Requests take Gabriel *or* Elie; tasks take Gabriel,
 so Elie approving a task is refused. Driven by `canApproveTasks` / `skipsTaskApproval`,
 separate from the request flags, so either chain can change without touching the other.
 
-## Approval emails
+## Emails
 
-The approval chain is the only thing that emails anybody. Comments, meetings and RSVPs
-stay in-app: an inbox that fills with portal noise stops being read, and these are the
-messages that need someone to act *outside* the app.
+Two things email: the **approval chain**, where somebody has to act, and the **workflow**,
+where somebody has to be able to see. Everything else — comments, meetings, RSVPs — stays
+in-app, because an inbox that fills with portal noise stops being read.
+
+### Approval — someone must act
 
 | When | Who gets it | Why them |
 |---|---|---|
@@ -133,7 +135,42 @@ messages that need someone to act *outside* the app.
 | A request is rejected | **Its author** | With the reason |
 
 Every message carries the request's `#number`, the task, its due date and estimate, and a
-link straight to it. Each goes to exactly one audience — nobody is CC'd "for visibility".
+link straight to it.
+
+### Workflow — someone must see
+
+Every step of the [three-phase workflow](#request-workflow) is emailed to **the admins** —
+today the CEO, the Project Leader and the CTO — so the people answerable for delivery can
+follow a request through the pipeline without opening the portal.
+
+| Step | Subject reads |
+|---|---|
+| Acceptance accepted | `#42 … — accepted — now in Planning` |
+| Accepted as Support | `#42 … — accepted as Support, closed` |
+| Planning finalized | `#42 … — planned — now in Delivery` |
+| Sent for review | `#42 … — under review` |
+| Delivered | `#42 … — delivered` |
+| Any phase cancelled | `#42 … — Planning cancelled` |
+
+Addressed to the **role, not to three names**, so it survives someone joining, leaving or
+changing job — the same reasoning as the approval flags.
+
+**Sent as the person who took the step**, so it arrives under their name and a reply goes
+back to them: the admins are reading a report from a colleague, not a notice from a
+system. The wording is the same string that goes into the activity log, so the two can
+never drift apart.
+
+Sending as somebody else is done the only way that survives a mail server's spam checks:
+
+- the **From header** is the actor (`Elie Saide <e.saide@tutwithus.com>`), and `Reply-To`
+  is their address;
+- the **SMTP envelope** stays `info@tutwithus.com`, the mailbox we actually authenticated
+  as. It has to be set explicitly — left alone, the library takes the envelope from the
+  From header, and a server that signed in as `info@` then posting as somebody else is
+  exactly what relay abuse looks like, so the host refuses it;
+- an actor **outside the domain** falls back to sending as `info@`. SPF and DKIM only
+  cover `tutwithus.com`, so sending as, say, a contractor's Gmail address would land in
+  spam or be rejected. Their address is kept as `Reply-To`.
 
 Sent from **info@tutwithus.com** over Titan's SMTP (`smtp.titan.email:465`), set with
 `SMTP_USER` / `SMTP_PASS`. A shared mailbox rather than a person's: replies land somewhere
@@ -257,7 +294,7 @@ Two deployment options:
 | `NODE_ENV` | — | `production` serves `frontend/dist` and marks the session cookie `Secure` |
 | `PORT` | — | Defaults to 4000. Most hosts inject this themselves |
 | `APP_ORIGINS` | — | Only for separate hosting (option 2 above) |
-| `APP_URL` | — | Where the portal is reachable; builds the links inside [approval emails](#approval-emails). Defaults to `http://localhost:5173` |
+| `APP_URL` | — | Where the portal is reachable; builds the links inside [approval emails](#emails). Defaults to `http://localhost:5173` |
 | `SMTP_USER` / `SMTP_PASS` | — | The mailbox approval emails are sent from. Both or neither; unset means no email |
 | `SMTP_HOST` / `SMTP_PORT` | — | Default `smtp.titan.email` / `465`. Port 465 uses implicit TLS, 587 STARTTLS |
 | `SMTP_FROM` | — | What recipients see in "From". Defaults to `TutWithUs Portal <SMTP_USER>` |

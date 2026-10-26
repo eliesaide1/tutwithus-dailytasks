@@ -127,6 +127,42 @@ export async function mailTaskRejected(opts: {
   });
 }
 
+// ── The workflow a request moves through ──
+
+/**
+ * Every phase step is reported to the admins — today the CEO, the Project Leader and the
+ * CTO — so the three people answerable for delivery can see where work stands without
+ * opening the portal. Addressed to the role, not to three names, so it keeps working when
+ * someone joins, leaves or changes job.
+ *
+ * It is sent **as the person who took the step**, so it arrives under their name and a
+ * reply goes back to them rather than into a shared mailbox — the admins are reading a
+ * report from a colleague, not a notice from a system.
+ */
+export async function mailPhaseChanged(opts: {
+  request: RequestLike;
+  /** Short subject tail, e.g. "accepted — now in Planning". */
+  headline: string;
+  /** What happened, continuing from the actor's name. */
+  detail: string;
+  actor: { id?: string; name: string };
+}) {
+  const admins = await User.find({ role: "ADMIN", active: true }).select("name email").lean();
+  const to = admins.map((a) => a.email).filter(Boolean);
+  if (!to.length) return;
+  const actor = (await recipients([opts.actor.id]))[0];
+  await sendMail({
+    to,
+    from: actor ? { name: actor.name, email: actor.email } : undefined,
+    subject: `${ref(opts.request)} — ${opts.headline}`,
+    text:
+      `${opts.actor.name} ${opts.detail}\n\n` +
+      `Request: ${ref(opts.request)}\n\n` +
+      `Open it here: ${link(opts.request.number)}` +
+      signature,
+  });
+}
+
 // ── New requests ──
 
 /** A new request is waiting on its approvers (Gabriel or Elie). */
