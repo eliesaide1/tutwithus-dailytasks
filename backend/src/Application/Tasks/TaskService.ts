@@ -5,6 +5,7 @@ import { badRequest, forbidden, notFound } from "../Common/errors";
 import { parse, zId } from "../Common/validation";
 import { canEditRequest, canEditTask, canManageTasks, sameId } from "../Common/permissions";
 import { logActivity, notify } from "../Common/activity";
+import { mailTaskApproved, mailTaskRaised, mailTaskRejected } from "../Common/mail";
 import { isId } from "../../Infrastructure/Database/database";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "../Shared/constants";
 import { findRequest, idOf, taskFields, taskInput } from "./TaskMappers";
@@ -55,6 +56,8 @@ export async function addTask(user: UserDoc, numberParam: string, input: unknown
     for (const a of await User.find({ active: true, canApproveTasks: true, _id: { $ne: user.id } }).select("_id").lean()) {
       await notify({ user: a._id, actor: user.id, title: `Approve task: ${task.title}`, body: `#${r.number} ${r.title}`, link });
     }
+    const assignee = task.assignee ? await User.findById(task.assignee).select("name").lean() : null;
+    await mailTaskRaised({ task, request: r, author: user, assigneeName: assignee?.name ?? null, authorId: user.id });
   }
   return { id: task.id, pending: !approved };
 }
@@ -77,9 +80,10 @@ export async function approveTask(user: UserDoc, id: string) {
 
   const link = `/tasks/${request.number}`;
   await logActivity({ actor: user.id, entity: "Task", entityId: task.id, action: "status", summary: `approved task "${task.title}" on #${request.number}`, link });
-  // Only now does the assignee hear about it.
+  // Only now does the assignee hear about it — in the app and by email.
   await notify({ user: task.assignee, actor: user.id, title: `New task assigned: ${task.title}`, body: `#${request.number} ${request.title}`, link });
   await notify({ user: task.createdBy, actor: user.id, title: `Your task was approved: ${task.title}`, link });
+  await mailTaskApproved({ task, request, approver: user, assigneeId: task.assignee });
   return { ok: true };
 }
 
@@ -102,6 +106,7 @@ export async function rejectTask(user: UserDoc, id: string, input: unknown) {
     link,
   });
   await notify({ user: task.createdBy, actor: user.id, title: `Task not approved: ${task.title}`, body: note || request.title, link });
+  await mailTaskRejected({ task, request, approver: user, authorId: task.createdBy, note });
   return { ok: true };
 }
 

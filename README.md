@@ -31,13 +31,21 @@ Every seeded account uses the temporary password `TutWithUs!2026`. You must chan
 
 | Person | Email | Title | Access |
 |---|---|---|---|
-| Charbel Najm | charbel@tutwithus.com | CEO | Admin |
-| Gabriel Sabbagh | gabriel@tutwithus.com | Project Leader | Admin |
-| Elie Saide | elie@tutwithus.com | CTO | Admin |
-| Thiago | thiago@tutwithus.com | Social Media & Marketing Manager | Member |
-| Silvana Haddad | silvana@tutwithus.com | COO (Chief Operating Officer) | Member |
-| Rodolphe Najm | rodolphe@tutwithus.com | Cross-department Support | Member |
-| Theresa Ghanem | theresa@tutwithus.com | Content Creator (reports to Thiago) | Member |
+| Charbel Najm | c.najm@tutwithus.com | CEO | Admin |
+| Gabriel Sabbagh | g.sabbagh@tutwithus.com | Project Leader | Admin |
+| Elie Saide | e.saide@tutwithus.com | CTO | Admin |
+| Thiago Vanderlei | t.vanderlei@tutwithus.com | Social Media & Marketing Manager | Member |
+| Silvana Haddad | selhaddad@tutwithus.com | COO (Chief Operating Officer) | Member |
+| Rodolphe Najm | r.najm@tutwithus.com | Cross-department Support | Member |
+| Theresa Ghanem | t.ghanem@tutwithus.com | Content Creator (reports to Thiago) | Member |
+
+The address is both the sign-in name and where [approval emails](#approval-emails) land,
+so there is only one per person and it has to be a real mailbox. **`t.ghanem@` does not
+exist yet** — create it in the Titan panel or Theresa's approval emails bounce.
+
+A database that predates this (`gabriel@`, `elie@`…) is moved across with **`npm run
+migrate`** in `backend/`: it rewrites the sign-in addresses, leaves passwords alone, skips
+anyone already moved, and is safe to run twice.
 
 Availability, recurring meetings, capacity and responsibilities are loaded from *Team Work Schedule v9 (1 Oct 2026)*. Titles are editable in the app.
 
@@ -58,6 +66,7 @@ Availability, recurring meetings, capacity and responsibilities are loaded from 
 | Schedule | `/schedule` | Live week calendar, team availability, meetings with RSVP, "Find a time", `.ics` export. DST-aware time zone conversion |
 | Announcements | `/announcements` | Pinned team news with optional notify-all |
 | Notifications | `/notifications` | Assignment, comment and meeting notifications |
+| Approval emails | — | Gabriel is emailed when a task is raised for someone; the assignee is emailed when he approves it. See [Approval emails](#approval-emails) |
 | Done report | `/admin/reports` | Admins only: every task completed this week, last week, this month, last month or between two dates, by person and by project, with hours and on-time rate. Export to Excel (CSV) or print |
 | Admin | `/admin/*` | Users and access (create accounts, reset passwords, roles), projects, activity log |
 
@@ -100,9 +109,44 @@ it counts towards nobody's week or workload, and stays out of the Done report. O
 author and Gabriel see it at all. Gabriel approves — and only then is the assignee told —
 or rejects with a reason the author is notified of.
 
+Gabriel is told **by email** as well as in the app, and on approval so is the assignee, so
+neither has to be watching the portal for work to move. See
+[Approval emails](#approval-emails).
+
 **Task approval is Gabriel's alone.** Requests take Gabriel *or* Elie; tasks take Gabriel,
 so Elie approving a task is refused. Driven by `canApproveTasks` / `skipsTaskApproval`,
 separate from the request flags, so either chain can change without touching the other.
+
+## Approval emails
+
+The approval chain is the only thing that emails anybody. Comments, meetings and RSVPs
+stay in-app: an inbox that fills with portal noise stops being read, and these are the
+messages that need someone to act *outside* the app.
+
+| When | Who gets it | Why them |
+|---|---|---|
+| A task is raised for someone | **Gabriel** | He is the only person who can approve it. The assignee is deliberately not told — the task has not been posted |
+| Gabriel approves it | **The person it is for** | This is the first they hear of it; it is now on their week and their workload |
+| Gabriel rejects it | **Whoever raised it** | With the reason he gave |
+| A new request is raised | **Its approvers** (Gabriel, or Gabriel and Elie) | Same gate, one level up |
+| A request is approved | **Its author and its new owner** | It is live work now and its Acceptance phase is open |
+| A request is rejected | **Its author** | With the reason |
+
+Every message carries the request's `#number`, the task, its due date and estimate, and a
+link straight to it. Each goes to exactly one audience — nobody is CC'd "for visibility".
+
+Sent from **info@tutwithus.com** over Titan's SMTP (`smtp.titan.email:465`), set with
+`SMTP_USER` / `SMTP_PASS`. A shared mailbox rather than a person's: replies land somewhere
+the team already watches, and rotating its password disturbs nobody's mail client. Titan
+needs **"Enable Titan on other apps"** switched on for that mailbox, or it refuses the
+login whatever the password. Links are built from `APP_URL`, so set that to the real
+address in production or people receive `localhost` links.
+
+**Email is optional and never blocks.** With `SMTP_USER`/`SMTP_PASS` unset nothing is
+sent and the portal is otherwise unaffected — the same arrangement as attachments. A send
+that fails is logged, not thrown: approving a task is the real work, and an in-app
+notification has already been written, so a mailbox being down never costs anyone the news
+or leaves an approval half-applied.
 
 ## Request workflow
 
@@ -213,6 +257,10 @@ Two deployment options:
 | `NODE_ENV` | — | `production` serves `frontend/dist` and marks the session cookie `Secure` |
 | `PORT` | — | Defaults to 4000. Most hosts inject this themselves |
 | `APP_ORIGINS` | — | Only for separate hosting (option 2 above) |
+| `APP_URL` | — | Where the portal is reachable; builds the links inside [approval emails](#approval-emails). Defaults to `http://localhost:5173` |
+| `SMTP_USER` / `SMTP_PASS` | — | The mailbox approval emails are sent from. Both or neither; unset means no email |
+| `SMTP_HOST` / `SMTP_PORT` | — | Default `smtp.titan.email` / `465`. Port 465 uses implicit TLS, 587 STARTTLS |
+| `SMTP_FROM` | — | What recipients see in "From". Defaults to `TutWithUs Portal <SMTP_USER>` |
 | `SPACES_KEY` / `SPACES_SECRET` / `SPACES_BUCKET` | — | Attachments. All three or none |
 | `SPACES_REGION` | — | Defaults to `fra1` |
 | `SPACES_ENDPOINT` | — | Derived from the region when unset |
@@ -255,7 +303,7 @@ The backend uses four layers. Each one only depends on the ones listed before it
 | Layer | Folder | Responsibility |
 |---|---|---|
 | Model | `backend/src/Model/` | MongoDB collections: one Mongoose schema per entity (User, Department, Project, Request, Task, Meeting, Availability…) |
-| Infrastructure | `backend/src/Infrastructure/` | Technical plumbing: `Config/` (env), `Database/` (MongoDB connection), `Security/` (JWT session, password hashing), `Storage/` (S3-compatible object storage for attachments), `Seed/` (sample data) |
+| Infrastructure | `backend/src/Infrastructure/` | Technical plumbing: `Config/` (env), `Database/` (MongoDB connection), `Security/` (JWT session, password hashing), `Storage/` (S3-compatible object storage for attachments), `Email/` (SMTP transport), `Seed/` (sample data and `migrate.ts`) |
 | Application | `backend/src/Application/` | Business logic as services per feature (`Auth/`, `Core/`, `Tasks/`, `People/`, `Schedule/`), plus `Common/` (errors, validation, permissions, activity log) and `Shared/` (time zones, constants) |
 | Controller | `backend/src/Controller/` | HTTP layer: one Express controller per feature (`AuthController`, `CoreController`, `TasksController`, `PeopleController`, `ScheduleController`), `Middleware/` (auth, CSRF, error handling) and `app.ts` |
 

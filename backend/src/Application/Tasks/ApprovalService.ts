@@ -14,6 +14,7 @@ import { Request, User, type UserDoc } from "../../Model";
 import { badRequest, forbidden } from "../Common/errors";
 import { parse } from "../Common/validation";
 import { logActivity, notify } from "../Common/activity";
+import { mailRequestApproved, mailRequestRejected } from "../Common/mail";
 import { findRequest } from "./TaskMappers";
 
 const decisionInput = z.object({
@@ -58,6 +59,7 @@ export async function approve(user: UserDoc, numberParam: string) {
   if (r.owner && String(r.owner) !== String(r.createdBy ?? "")) {
     await notify({ user: r.owner, actor: user.id, title: `You own #${r.number}`, body: r.title, link });
   }
+  await mailRequestApproved({ request: r, approver: user, authorId: r.createdBy, ownerId: r.owner });
   return { ok: true };
 }
 
@@ -86,6 +88,7 @@ export async function reject(user: UserDoc, numberParam: string, input: unknown)
     link,
   });
   await notify({ user: r.createdBy, actor: user.id, title: `#${r.number} was not approved`, body: note || r.title, link });
+  await mailRequestRejected({ request: r, approver: user, authorId: r.createdBy, note });
   return { ok: true };
 }
 

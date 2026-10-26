@@ -5,6 +5,7 @@ import { badRequest, forbidden, notFound } from "../Common/errors";
 import { parse } from "../Common/validation";
 import { canEditRequest, canManageTasks, canSeeAllTasks, sameId } from "../Common/permissions";
 import { logActivity, notify } from "../Common/activity";
+import { mailRequestRaised } from "../Common/mail";
 import { isId } from "../../Infrastructure/Database/database";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "../Shared/constants";
 import { dropAttachments } from "./AttachmentCleanup";
@@ -170,9 +171,11 @@ export async function createRequest(user: UserDoc, input: unknown) {
 
   if (pending) {
     // Nobody is given work yet: it goes to whoever can approve it.
-    for (const a of await approversFor(user.id)) {
+    const approvers = await approversFor(user.id);
+    for (const a of approvers) {
       await notify({ user: a._id, actor: user.id, title: `Approve request #${number}?`, body: request.title, link });
     }
+    await mailRequestRaised({ request, author: user, approvers, taskCount: created.length });
   } else {
     await notify({ user: request.owner, actor: user.id, title: `You own request #${number}`, body: request.title, link });
     for (const t of created) {

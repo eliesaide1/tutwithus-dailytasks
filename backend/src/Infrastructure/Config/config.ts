@@ -45,6 +45,21 @@ function spacesConfig() {
   };
 }
 
+// Outgoing email (Titan business email). Optional in the same way as storage: with these
+// unset nothing is emailed and the portal is otherwise unaffected.
+function smtpConfig() {
+  const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
+  if (!SMTP_USER || !SMTP_PASS) return null;
+  return {
+    host: SMTP_HOST ?? "smtp.titan.email",
+    port: Number(SMTP_PORT ?? 465),
+    user: SMTP_USER,
+    pass: SMTP_PASS,
+    // What recipients see in "From". Defaults to the sending mailbox.
+    from: SMTP_FROM ?? `TutWithUs Portal <${SMTP_USER}>`,
+  };
+}
+
 export const config = {
   env: process.env.NODE_ENV ?? "development",
   isProd: process.env.NODE_ENV === "production",
@@ -59,6 +74,9 @@ export const config = {
   serverRoot,
   clientDist: path.resolve(serverRoot, "..", "frontend", "dist"),
   spaces: spacesConfig(),
+  smtp: smtpConfig(),
+  /** Where the portal is reachable, used to build links inside emails. */
+  appUrl: (process.env.APP_URL ?? "http://localhost:5173").replace(/\/$/, ""),
   /** Largest attachment accepted, in bytes. */
   maxAttachmentBytes: Number(process.env.MAX_ATTACHMENT_MB ?? 25) * 1024 * 1024,
 };

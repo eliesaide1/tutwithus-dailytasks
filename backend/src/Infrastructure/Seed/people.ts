@@ -8,6 +8,11 @@ export type People = Awaited<ReturnType<typeof seedPeople>>;
 const h = (hours: number) => hours * 60;
 
 // Team from the Team Work Schedule v9 (1 October 2026).
+//
+// Emails are the real Titan mailboxes on tutwithus.com — they are both the sign-in
+// address and where approval notifications land, so there is only one of them per person.
+// t.ghanem@ is the one that does not exist yet; create it in the Titan panel or Theresa's
+// approval emails bounce. An existing database is moved across with `npm run migrate`.
 export async function seedPeople() {
   const passwordHash = await bcrypt.hash(DEFAULT_PASSWORD, 10);
 
@@ -24,7 +29,7 @@ export async function seedPeople() {
 
   const charbel = await User.create({
     ...base,
-    email: "charbel@tutwithus.com",
+    email: "c.najm@tutwithus.com",
     name: "Charbel Najm",
     title: "CEO",
     role: "ADMIN",
@@ -39,7 +44,7 @@ export async function seedPeople() {
 
   const gabriel = await User.create({
     ...base,
-    email: "gabriel@tutwithus.com",
+    email: "g.sabbagh@tutwithus.com",
     name: "Gabriel Sabbagh",
     title: "Project Leader",
     role: "ADMIN",
@@ -60,7 +65,7 @@ export async function seedPeople() {
 
   const elie = await User.create({
     ...base,
-    email: "elie@tutwithus.com",
+    email: "e.saide@tutwithus.com",
     name: "Elie Saide",
     title: "CTO",
     role: "ADMIN",
@@ -78,7 +83,7 @@ export async function seedPeople() {
 
   const thiago = await User.create({
     ...base,
-    email: "thiago@tutwithus.com",
+    email: "t.vanderlei@tutwithus.com",
     name: "Thiago",
     title: "Social Media & Marketing Manager",
     role: "MEMBER",
@@ -93,7 +98,7 @@ export async function seedPeople() {
 
   const silvana = await User.create({
     ...base,
-    email: "silvana@tutwithus.com",
+    email: "selhaddad@tutwithus.com",
     name: "Silvana Haddad",
     title: "COO",
     role: "MEMBER",
@@ -108,7 +113,7 @@ export async function seedPeople() {
 
   const rodolphe = await User.create({
     ...base,
-    email: "rodolphe@tutwithus.com",
+    email: "r.najm@tutwithus.com",
     name: "Rodolphe Najm",
     title: "Cross-department Support",
     role: "MEMBER",
@@ -124,7 +129,7 @@ export async function seedPeople() {
 
   const theresa = await User.create({
     ...base,
-    email: "theresa@tutwithus.com",
+    email: "t.ghanem@tutwithus.com",
     name: "Theresa Ghanem",
     title: "Content Creator",
     role: "MEMBER",
