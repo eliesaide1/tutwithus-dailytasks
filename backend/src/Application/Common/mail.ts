@@ -208,22 +208,33 @@ export async function mailRequestApproved(opts: {
   });
 }
 
+/**
+ * Rejected. Both the author and the person who would have been in charge are told —
+ * the mirror of approval, which tells the same two people.
+ *
+ * What the owner gets is only the decision, never the request: approval is what hands
+ * someone work, so a rejection must not read like an assignment. The wording is neutral
+ * about who is reading, because the author and the owner are often not the same person
+ * and are sometimes the same one.
+ */
 export async function mailRequestRejected(opts: {
   request: RequestLike;
   approver: { name: string };
   authorId: Ref;
+  ownerId: Ref;
   note?: string | null;
 }) {
-  const to = await recipients([opts.authorId]);
+  const to = await recipients([opts.authorId, opts.ownerId]);
   if (!to.length) return;
   await sendMail({
     to: to.map((r) => r.email),
     subject: `Request not approved: ${ref(opts.request)}`,
     text:
-      `${opts.approver.name} did not approve the request you raised.\n\n` +
+      `${opts.approver.name} did not approve this request.\n\n` +
       `${ref(opts.request)}\n` +
       `Reason: ${opts.note?.trim() || "none given"}\n\n` +
-      `The record is kept, but it never became work.\n\n` +
+      `Nothing has been assigned and no work follows from it. The record is kept so the ` +
+      `decision stays visible, but it never became work.\n\n` +
       `See it here: ${link(opts.request.number)}` +
       signature,
   });

@@ -88,7 +88,12 @@ export async function reject(user: UserDoc, numberParam: string, input: unknown)
     link,
   });
   await notify({ user: r.createdBy, actor: user.id, title: `#${r.number} was not approved`, body: note || r.title, link });
-  await mailRequestRejected({ request: r, approver: user, authorId: r.createdBy, note });
+  // The person who would have owned it hears the decision too — but only the decision.
+  // Approval is what hands someone work; a rejection must never read like an assignment.
+  if (r.owner && String(r.owner) !== String(r.createdBy ?? "")) {
+    await notify({ user: r.owner, actor: user.id, title: `#${r.number} was not approved`, body: note || r.title, link });
+  }
+  await mailRequestRejected({ request: r, approver: user, authorId: r.createdBy, ownerId: r.owner, note });
   return { ok: true };
 }
 

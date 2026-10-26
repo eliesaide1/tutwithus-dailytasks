@@ -132,10 +132,20 @@ in-app, because an inbox that fills with portal noise stops being read.
 | Gabriel rejects it | **Whoever raised it** | With the reason he gave |
 | A new request is raised | **Its approvers** (Gabriel, or Gabriel and Elie) | Same gate, one level up |
 | A request is approved | **Its author and its new owner** | It is live work now and its Acceptance phase is open |
-| A request is rejected | **Its author** | With the reason |
+| A request is rejected | **Its author and the person who would have owned it** | The same two people, so the decision reaches whoever was expecting the work |
 
 Every message carries the request's `#number`, the task, its due date and estimate, and a
 link straight to it.
+
+**A rejection sends the decision, never the request.** Approval is what hands somebody
+work, so the owner's copy says what was decided and why, and states plainly that nothing
+has been assigned — it must not read like an assignment. Author and owner being the same
+person gets one copy, not two.
+
+**A rejected task is the exception: only its author hears.** The assignee was never told
+the task existed — that is the whole point of holding it pending — so telling them now
+that work they never knew about has been cancelled would leak exactly what the gate
+exists to withhold.
 
 ### Workflow — someone must see
 
