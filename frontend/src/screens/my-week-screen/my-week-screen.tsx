@@ -54,11 +54,9 @@ export default function MyWeekScreen() {
             : "Tasks due or planned for the week."
         }
         actions={
-          viewer.permissions.canManageTasks && (
-            <AP_LinkButton to="/tasks/new" variant="secondary">
-              <Plus className="size-4" /> New request
-            </AP_LinkButton>
-          )
+          <AP_LinkButton to="/tasks/new" variant="secondary">
+            <Plus className="size-4" /> New request
+          </AP_LinkButton>
         }
       />
       <AP_QueryState isLoading={q.isLoading} error={q.error}>

@@ -47,7 +47,7 @@ export default function DashboardScreen() {
           <AP_LinkButton to="/my-week" variant="secondary">
             My week
           </AP_LinkButton>
-          {user.permissions.canManageTasks && <AP_LinkButton to="/tasks/new">New request</AP_LinkButton>}
+          <AP_LinkButton to="/tasks/new">New request</AP_LinkButton>
         </div>
       </div>
 

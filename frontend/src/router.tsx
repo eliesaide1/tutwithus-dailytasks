@@ -58,11 +58,14 @@ export const router = createBrowserRouter([
             ],
           },
 
+          // Anyone may raise a request — that is what the approval step is for. Editing
+          // and deleting it stay admin-only, enforced on the server.
+          { path: "tasks/new", lazy: screen(() => import("@/screens/new-request-screen/new-request-screen")) },
+
           // Admins (Charbel, Elie, Gabriel)
           {
             element: <AP_RequireRole gate="admin" />,
             children: [
-              { path: "tasks/new", lazy: screen(() => import("@/screens/new-request-screen/new-request-screen")) },
               { path: "admin/projects", lazy: screen(() => import("@/screens/projects-screen/projects-screen")) },
               { path: "admin/users", lazy: screen(() => import("@/screens/admin-users-screen/admin-users-screen")) },
               { path: "admin/users/new", lazy: screen(() => import("@/screens/admin-user-new-screen/admin-user-new-screen")) },

@@ -69,11 +69,9 @@ export default function TasksScreen() {
             : "Your tasks, plus the requests you own. Update a task's status from the request page or My week."
         }
         actions={
-          user.permissions.canManageTasks && (
-            <AP_LinkButton to={project ? `/tasks/new?project=${project}` : "/tasks/new"}>
-              <Plus className="size-4" /> New request
-            </AP_LinkButton>
-          )
+          <AP_LinkButton to={project ? `/tasks/new?project=${project}` : "/tasks/new"}>
+            <Plus className="size-4" /> New request
+          </AP_LinkButton>
         }
       />
 

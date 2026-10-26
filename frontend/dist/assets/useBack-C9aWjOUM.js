@@ -1,1 +1,0 @@
-import{ao as a}from"./index-CnYiyflw.js";function f(r){const{pathname:o,search:e}=a();return{from:o+e,fromLabel:r}}function m(){var o;const r=a().state;return(o=r==null?void 0:r.from)!=null&&o.startsWith("/")&&r.fromLabel?{from:r.from,fromLabel:r.fromLabel}:null}export{m as a,f as u};

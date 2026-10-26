@@ -24,17 +24,21 @@ import {
   userLite,
   type Lean,
 } from "./TaskMappers";
-import { assertInTeam, getProjectTeam, visibleProjectIds } from "./ProjectTeam";
+import { assertInTeam, getProjectTeam } from "./ProjectTeam";
 
 /**
  * Who may open a request: admins, its owner and creator see everything; people with a
  * task in it see only their own tasks. Anyone else gets a 404 (the request isn't revealed).
+ *
+ * Your connection to the request is the whole test, and the project's department is not
+ * part of it. It used to be checked first, which meant a request you raised yourself in
+ * another department's project answered 404 the moment you created it — and raising one
+ * for another department is exactly what anyone being able to raise a request is for.
+ * The check was never doing more than that: every path past it was owner, creator or
+ * assignee anyway, so all it could do was deny people who were one of the three.
  */
 export async function requestAccess(user: UserDoc, r: { _id: unknown; project?: unknown; owner?: unknown; createdBy?: unknown }) {
   if (canSeeAllTasks(user)) return { full: true };
-  // Outside the admins, only requests in your own department's projects exist for you.
-  const visible = (await visibleProjectIds(user)) ?? [];
-  if (!visible.includes(String(idOf(r.project)))) throw notFound("Request not found");
   if (sameId(idOf(r.owner), user.id) || sameId(idOf(r.createdBy), user.id)) return { full: true };
   if (await Task.exists({ request: r._id, assignee: user.id })) return { full: false };
   throw notFound("Request not found");
@@ -64,9 +68,10 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
     if (!isId(q.project)) throw badRequest("Invalid project");
     filter.project = q.project;
   }
-  // Outside the admins, only your own department's projects.
-  const visible = await visibleProjectIds(user);
-  if (visible) filter.project = q.project ? (visible.includes(q.project) ? q.project : { $in: [] }) : { $in: visible };
+  // No department restriction: outside the admins `personId` has already been forced to
+  // the viewer, so the tree holds only their own work either way. Restricting by project
+  // on top of that hid requests they raised themselves for another department — the one
+  // thing it changed, and the wrong one.
   if (personId) {
     const requestIds = await Task.distinct("request", { assignee: personId });
     filter.$or = [{ owner: personId }, { _id: { $in: requestIds } }, ...(seeAll ? [] : [{ createdBy: personId }])];

@@ -83,7 +83,15 @@ A new request is not work until someone signs off on it.
 **Nobody approves their own request.** That is what the step is for, and it is also what
 decides Elie's case: he is an approver, so the only approver left for him is Gabriel.
 
-Anyone may *raise* a request. Editing and deleting stay admin-only.
+Anyone may *raise* a request — the **New request** button is on the dashboard, the task
+tree and My week for everybody, not only the admins. Editing and deleting stay admin-only.
+
+Raising one **for another department** is the normal case: Silvana asking for platform
+work files it against a Technology project, where it lands with that department's lead
+once approved. So a request belongs to whoever is connected to it — its owner, whoever
+raised it, anyone holding a task in it — and *not* to a department. Checking the
+department as well meant a request you raised yourself for another team answered `404` the
+moment you created it.
 
 While a request is pending it is not work: it stays out of the workload and out of
 everyone's tree except the author's and the approvers', and its
