@@ -64,8 +64,17 @@ function fromHeader(from: Mail["from"]) {
 export async function sendMail(mail: Mail): Promise<boolean> {
   const list = (v: string | string[] | undefined) => [...new Set((Array.isArray(v) ? v : v ? [v] : []).filter(Boolean))];
   const to = list(mail.to);
-  if (!to.length) return false;
-  if (!isEmailConfigured()) return false;
+  // Both of these are ordinary states rather than faults, but skipping them in silence
+  // leaves "no email arrived" with nothing to look at, and the search then starts at the
+  // mail server — which is the one place the answer cannot be.
+  if (!to.length) {
+    console.warn(`Email "${mail.subject}" not sent: nobody to send it to.`);
+    return false;
+  }
+  if (!isEmailConfigured()) {
+    console.warn(`Email "${mail.subject}" not sent: SMTP_USER/SMTP_PASS are not set on this server.`);
+    return false;
+  }
   // Nobody appears twice, and nobody is copied on a message they are already addressed
   // on. Both happen naturally: an admin acting on their own request is in the actor list
   // and the admin list at once.
