@@ -44,8 +44,25 @@ so there is only one per person and it has to be a real mailbox. **`t.ghanem@` d
 exist yet** — create it in the Titan panel or Theresa's approval emails bounce.
 
 A database that predates this (`gabriel@`, `elie@`…) is moved across with **`npm run
-migrate`** in `backend/`: it rewrites the sign-in addresses, leaves passwords alone, skips
-anyone already moved, and is safe to run twice.
+migrate`** in `backend/`. It is safe to run twice and **never deletes anything**:
+
+- the address is renamed **in place, on the same account**, so every task, request,
+  comment and meeting stays attached — they all point at the account's id, never at its
+  email. The run prints what each account holds afterwards, so that is checkable rather
+  than a promise;
+- passwords are untouched. Only the address changes;
+- an **old address can never sign in again**. Normally there is nothing to seal, because
+  the rename means it no longer exists. The exception is an account the rename skipped —
+  it is skipped when some *other* account already holds the new address, which would leave
+  an older one still answering to `thiago@`. Those are **deactivated, not deleted**:
+  deleting would strand whatever they hold, while `active: false` refuses the sign-in and
+  drops the session on the next request. Whatever such an account holds is printed,
+  because work sitting on a duplicate needs a person to decide where it goes.
+
+**The cutover is immediate** — the old addresses stop working the moment it runs — so tell
+people their new address first. Sessions already open are *not* ended by it: they carry
+the account's id, not its email, so they keep working as the same person. To end every one
+of them, rotate `JWT_SECRET` and redeploy.
 
 Availability, recurring meetings, capacity and responsibilities are loaded from *Team Work Schedule v9 (1 Oct 2026)*. Titles are editable in the app.
 

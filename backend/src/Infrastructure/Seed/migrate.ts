@@ -1,14 +1,19 @@
 // One-off migrations for a database that already has data (the seed only runs on an
-// empty one). Safe to run more than once: every step checks before it writes.
+// empty one). Safe to run more than once: every step checks before it writes, and no step
+// ever deletes anything.
 //
 //   npm run migrate
 import { connectDb, disconnectDb } from "../Database/database";
-import { User } from "../../Model";
+import { Request, Task, User } from "../../Model";
 
 /**
  * Sign-in addresses moved to the real Titan mailboxes, so that approval emails reach an
  * inbox somebody actually opens. Matched on the old address rather than on name, because
  * names get edited in the app and an email is the one field that must stay exact.
+ *
+ * The address is renamed **in place**, on the same account. Nothing is created and nothing
+ * is deleted, so every task, request, comment and meeting stays attached: they all point
+ * at the account's id, never at its email. The report at the end proves it.
  */
 const EMAILS: [from: string, to: string][] = [
   ["charbel@tutwithus.com", "c.najm@tutwithus.com"],
@@ -19,6 +24,8 @@ const EMAILS: [from: string, to: string][] = [
   ["rodolphe@tutwithus.com", "r.najm@tutwithus.com"],
   ["theresa@tutwithus.com", "t.ghanem@tutwithus.com"],
 ];
+
+const OLD = EMAILS.map(([from]) => from);
 
 async function migrateEmails() {
   let moved = 0;
@@ -38,11 +45,76 @@ async function migrateEmails() {
   console.log(moved ? `Updated ${moved} sign-in address(es).` : "Sign-in addresses are already up to date.");
 }
 
+/** What an account holds. Used to show nothing was orphaned, and before deactivating one. */
+async function holdings(id: unknown) {
+  const [assigned, raisedTasks, owned, raisedRequests] = await Promise.all([
+    Task.countDocuments({ assignee: id }),
+    Task.countDocuments({ createdBy: id }),
+    Request.countDocuments({ owner: id }),
+    Request.countDocuments({ createdBy: id }),
+  ]);
+  return { assigned, raisedTasks, owned, raisedRequests };
+}
+
+/**
+ * An old address must never sign in again. Normally there is nothing to do — the rename
+ * means it no longer exists anywhere — but the rename is skipped when the new address is
+ * already taken, which would leave a second, older account still holding the old address
+ * and still able to sign in.
+ *
+ * Those are deactivated, not deleted: deleting an account would strand whatever it holds,
+ * and `active: false` already refuses the sign-in and drops the session on the next
+ * request. Anything it holds is printed, because a leftover holding real work needs a
+ * person to decide where that work goes.
+ */
+async function sealOldAddresses() {
+  const leftovers = await User.find({ email: { $in: OLD } });
+  if (!leftovers.length) {
+    console.log("  none — no account can sign in with an old address.");
+    return;
+  }
+  for (const u of leftovers) {
+    const h = await holdings(u._id);
+    const held = h.assigned + h.raisedTasks + h.owned + h.raisedRequests;
+    console.warn(`  ${u.email} (${u.name}) still existed — deactivating, not deleting.`);
+    if (held) {
+      console.warn(
+        `    ⚠ it holds ${h.assigned} task(s) assigned, ${h.raisedTasks} raised, ` +
+          `${h.owned} request(s) owned, ${h.raisedRequests} raised. Decide where that work goes.`,
+      );
+    }
+    u.active = false;
+    await u.save();
+  }
+}
+
+/** Proof that the work is still attached to the people who own it. */
+async function reportHoldings() {
+  for (const [, to] of EMAILS) {
+    const u = await User.findOne({ email: to }).select("name").lean();
+    if (!u) {
+      console.log(`  ${to.padEnd(28)} no account`);
+      continue;
+    }
+    const h = await holdings(u._id);
+    console.log(
+      `  ${to.padEnd(28)} ${String(u.name).padEnd(18)} ` +
+        `tasks ${h.assigned} assigned / ${h.raisedTasks} raised · requests ${h.owned} owned / ${h.raisedRequests} raised`,
+    );
+  }
+}
+
 try {
   const conn = await connectDb();
-  console.log(`Migrating "${conn.name}"…`);
+  console.log(`Migrating "${conn.name}"…\n`);
+  console.log("Sign-in addresses:");
   await migrateEmails();
-  console.log("Done. Everyone signs in with their new address; passwords are unchanged.");
+  console.log("\nOld addresses that can still sign in:");
+  await sealOldAddresses();
+  console.log("\nWhat each account holds:");
+  await reportHoldings();
+  console.log("\nDone. Everyone signs in with their new address; passwords are unchanged.");
+  console.log("To end every session that is still open, rotate JWT_SECRET and redeploy.");
 } catch (e) {
   console.error(e);
   process.exitCode = 1;
