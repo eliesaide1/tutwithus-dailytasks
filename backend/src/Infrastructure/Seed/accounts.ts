@@ -50,6 +50,34 @@ async function list() {
     "\n`temp pw` yes means the account has never completed a first sign-in, so its password\n" +
       "is still the one it was created with and must be changed on the way in.",
   );
+  await approvalChain();
+}
+
+/**
+ * Who the approval steps actually resolve to.
+ *
+ * Both the in-app notification and the email go to whoever these flags name, so an empty
+ * list here is why nobody was told — and it reads as "the email never arrived", which
+ * sends you looking at the mail server instead of at the account.
+ */
+async function approvalChain() {
+  const [requestApprovers, taskApprovers, skipRequest, skipTask] = await Promise.all([
+    User.find({ active: true, canApproveRequests: true }).select("email").lean(),
+    User.find({ active: true, canApproveTasks: true }).select("email").lean(),
+    User.find({ active: true, skipsRequestApproval: true }).select("email").lean(),
+    User.find({ active: true, skipsTaskApproval: true }).select("email").lean(),
+  ]);
+  const names = (list: { email: string }[]) => (list.length ? list.map((u) => u.email).join(", ") : "NOBODY — nothing can be approved");
+  console.log("\nApproval chain");
+  console.log("-".repeat(96));
+  console.log(`  can approve requests   ${names(requestApprovers)}`);
+  console.log(`  can approve tasks      ${names(taskApprovers)}`);
+  console.log(`  requests open at once  ${skipRequest.length ? skipRequest.map((u) => u.email).join(", ") : "nobody"}`);
+  console.log(`  tasks post at once     ${skipTask.length ? skipTask.map((u) => u.email).join(", ") : "nobody"}`);
+  console.log(
+    "\nA request is emailed to every request approver except its author, so a lone approver\n" +
+      "raising one has nobody left to tell — the chain needs two people to work.",
+  );
 }
 
 /**
