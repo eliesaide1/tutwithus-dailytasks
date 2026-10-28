@@ -81,12 +81,19 @@ Users resets one — but that needs an admin who is already signed in, and if th
 locked out too there is no way back in through the app. From a shell on the server:
 
 ```bash
-npm run accounts                                  # every account, and whether it has ever signed in
-npm run accounts -- --set <email> '<password>'    # set one directly
+npm run accounts                                     # every account, and whether it has ever signed in
+npm run accounts -- --set <email> '<password>'       # set one account's password
+npm run accounts -- --reset-all '<password>'         # put every active account on one password
 ```
 
-A password set this way has to be changed at first sign-in, so the one typed into a shell
-is never the lasting one, and any session cut-off standing against the account is lifted —
+Start with the listing. Its **`temp pw`** column usually answers the question on its own:
+`yes` means that account never completed a first sign-in, so its password is still
+`TutWithUs!2026` and whatever the person remembers was never set. `--reset-all` is for
+getting a whole team back in at once, when it is no longer clear who knows what — it skips
+deactivated accounts, so a duplicate the migration sealed stays sealed.
+
+A password set either way has to be changed at first sign-in, so the one typed into a
+shell is never the lasting one, and any session cut-off standing against the account is lifted —
 otherwise the new password would be refused by the old stamp. It grants nothing new: a
 shell on the server already means the database URI and every secret are readable.
 
