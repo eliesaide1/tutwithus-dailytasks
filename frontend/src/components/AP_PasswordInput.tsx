@@ -11,7 +11,7 @@ export function AP_PasswordInput({ className, ...props }: Omit<ComponentProps<"i
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
-        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-400 hover:text-slate-700 focus-visible:text-brand-700 focus-visible:outline-none"
+        className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-slate-500 hover:text-brand-700 focus-visible:text-brand-700 focus-visible:outline-none"
         aria-label={visible ? "Hide password" : "Show password"}
         aria-pressed={visible}
         title={visible ? "Hide password" : "Show password"}

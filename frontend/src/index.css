@@ -40,6 +40,25 @@ body {
   }
 }
 
+/*
+ * Browsers put their own controls inside a password box, in the same corner as the
+ * show/hide button in AP_PasswordInput — Safari a password-manager key, Edge a second
+ * eye. Left alone they sit on top of ours, so the button looks missing.
+ *
+ * Safari's is moved aside rather than hidden, because it is how people fill a saved
+ * password. Edge's is removed: it does exactly what our button already does, and two eyes
+ * side by side is worse than one.
+ */
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+  margin-right: 1.75rem;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
 @media print {
   .no-print {
     display: none !important;
