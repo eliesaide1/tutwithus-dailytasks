@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps dist/index.js",
     "seed": "tsx src/Infrastructure/Seed/index.ts",
     "migrate": "tsx src/Infrastructure/Seed/migrate.ts",
+    "accounts": "tsx src/Infrastructure/Seed/accounts.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

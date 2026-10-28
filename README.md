@@ -74,6 +74,22 @@ it runs — so tell people their new address first.
 Rotating `JWT_SECRET` also ends every session, but it ends *everyone's*, including people
 whose address never moved.
 
+### When nobody can sign in
+
+Passwords are bcrypt hashes, so a forgotten one cannot be looked up by anybody. Admin →
+Users resets one — but that needs an admin who is already signed in, and if the admins are
+locked out too there is no way back in through the app. From a shell on the server:
+
+```bash
+npm run accounts                                  # every account, and whether it has ever signed in
+npm run accounts -- --set <email> '<password>'    # set one directly
+```
+
+A password set this way has to be changed at first sign-in, so the one typed into a shell
+is never the lasting one, and any session cut-off standing against the account is lifted —
+otherwise the new password would be refused by the old stamp. It grants nothing new: a
+shell on the server already means the database URI and every secret are readable.
+
 Availability, recurring meetings, capacity and responsibilities are loaded from *Team Work Schedule v9 (1 Oct 2026)*. Titles are editable in the app.
 
 ## Features
