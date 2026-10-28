@@ -22,6 +22,11 @@ const userSchema = new Schema(
     active: { type: Boolean, default: true },
     validUntil: Date,
     lastLoginAt: Date,
+    // Sessions issued before this are refused, which ends them without touching anyone
+    // else's. Stamped when an account's access is changed underneath the person holding
+    // it — a sign-in address moving, say — since the session itself carries only the
+    // account's id and would otherwise survive the change unaffected.
+    sessionsValidFrom: Date,
     manager: { type: ObjectId, ref: "User", default: null },
     department: { type: ObjectId, ref: "Department", default: null },
     // New-request approval. Flags rather than names, so the chain survives people

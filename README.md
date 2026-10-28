@@ -59,10 +59,20 @@ migrate`** in `backend/`. It is safe to run twice and **never deletes anything**
   drops the session on the next request. Whatever such an account holds is printed,
   because work sitting on a duplicate needs a person to decide where it goes.
 
-**The cutover is immediate** — the old addresses stop working the moment it runs — so tell
-people their new address first. Sessions already open are *not* ended by it: they carry
-the account's id, not its email, so they keep working as the same person. To end every one
-of them, rotate `JWT_SECRET` and redeploy.
+- **sessions on a moved address are ended.** A session carries the account's id, not its
+  email, so renaming the address leaves whoever was signed in exactly where they were —
+  still themselves, still working. That is right for a change someone made themselves and
+  wrong for one made underneath them, so each migrated account is stamped with
+  `sessionsValidFrom` and any session issued before it stops being accepted. Only those
+  seven are touched; nobody else is disturbed. It is stamped once, so re-running the
+  migration does not throw the team out again — `npm run migrate -- --logout` forces it
+  when that *is* the intent.
+
+**The cutover is immediate** — old addresses stop working and open sessions end the moment
+it runs — so tell people their new address first.
+
+Rotating `JWT_SECRET` also ends every session, but it ends *everyone's*, including people
+whose address never moved.
 
 Availability, recurring meetings, capacity and responsibilities are loaded from *Team Work Schedule v9 (1 Oct 2026)*. Titles are editable in the app.
 

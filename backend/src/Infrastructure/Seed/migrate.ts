@@ -26,6 +26,10 @@ const EMAILS: [from: string, to: string][] = [
 ];
 
 const OLD = EMAILS.map(([from]) => from);
+const NEW = EMAILS.map(([, to]) => to);
+
+/** `npm run migrate -- --logout` ends every session again, even already-stamped ones. */
+const forceLogout = process.argv.includes("--logout");
 
 async function migrateEmails() {
   let moved = 0;
@@ -43,6 +47,29 @@ async function migrateEmails() {
     moved += 1;
   }
   console.log(moved ? `Updated ${moved} sign-in address(es).` : "Sign-in addresses are already up to date.");
+}
+
+/**
+ * End the sessions of everyone whose sign-in address moved.
+ *
+ * Renaming the address does not touch a session — it carries the account's id, so whoever
+ * was signed in simply stays signed in, still as themselves. That is the wrong outcome
+ * when the address moved underneath them: they should come back in through the new one.
+ *
+ * Stamped only where it is not already set, so re-running the migration does not throw
+ * the whole team out a second time. `--logout` forces it for when that is the intent. Only
+ * the seven accounts are touched; nobody else's session is disturbed.
+ */
+async function endSessions() {
+  const filter = forceLogout ? { email: { $in: NEW } } : { email: { $in: NEW }, sessionsValidFrom: null };
+  const people = await User.find(filter).select("name email");
+  if (!people.length) {
+    console.log("  none — every migrated account has already been signed out once.");
+    return;
+  }
+  const at = new Date();
+  await User.updateMany({ _id: { $in: people.map((p) => p._id) } }, { $set: { sessionsValidFrom: at } });
+  for (const p of people) console.log(`  ${p.email} — signed out, signs back in with the new address`);
 }
 
 /** What an account holds. Used to show nothing was orphaned, and before deactivating one. */
@@ -111,10 +138,12 @@ try {
   await migrateEmails();
   console.log("\nOld addresses that can still sign in:");
   await sealOldAddresses();
+  console.log("\nSessions still open on a moved address:");
+  await endSessions();
   console.log("\nWhat each account holds:");
   await reportHoldings();
   console.log("\nDone. Everyone signs in with their new address; passwords are unchanged.");
-  console.log("To end every session that is still open, rotate JWT_SECRET and redeploy.");
+  console.log("Sessions on the moved addresses are ended; re-run with -- --logout to repeat that.");
 } catch (e) {
   console.error(e);
   process.exitCode = 1;
