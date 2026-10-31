@@ -9,6 +9,7 @@
 // on top of an in-app notification that has already been written.
 import nodemailer, { type Transporter } from "nodemailer";
 import { config } from "../Config/config";
+import { renderHtml, renderText, type Blocks } from "./layout";
 
 let transport: Transporter | null = null;
 
@@ -38,8 +39,8 @@ export type Mail = {
    */
   from?: { name: string; email: string };
   subject: string;
-  /** Plain-text body. The HTML part is generated from it, so write it readably. */
-  text: string;
+  /** What the message says. Both the HTML and the plain-text part come from this. */
+  blocks: Blocks;
 };
 
 const domainOf = (address: string) => address.split("@")[1]?.toLowerCase() ?? "";
@@ -94,8 +95,8 @@ export async function sendMail(mail: Mail): Promise<boolean> {
       // bounces go, while the From header still reads as the person who acted.
       envelope: { from: config.smtp!.user, to: [...to, ...cc] },
       subject: mail.subject,
-      text: mail.text,
-      html: htmlFrom(mail.text),
+      text: renderText(mail.blocks),
+      html: renderHtml(mail.blocks),
     });
     return true;
   } catch (e) {
@@ -103,21 +104,4 @@ export async function sendMail(mail: Mail): Promise<boolean> {
     console.error(`Email "${mail.subject}" to ${to.join(", ")} failed:`, e);
     return false;
   }
-}
-
-const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-
-/**
- * Plain text -> a simple HTML part. Blank lines become paragraphs and bare URLs become
- * links, which is all these messages need; anything richer would be a template system
- * nobody asked for.
- */
-function htmlFrom(text: string) {
-  const paragraphs = escapeHtml(text)
-    .split(/\n{2,}/)
-    .map((block) => block.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>'))
-    .map((block) => `<p style="margin:0 0 14px">${block}</p>`)
-    .join("");
-  return `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px;line-height:1.55;color:#1e293b">${paragraphs}</div>`;
 }

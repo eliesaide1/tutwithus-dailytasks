@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Building2, User } from "lucide-react";
 import { cn } from "@/Shared/format";
 import { personWithTitle } from "@/Shared/SharedFunctions";
@@ -6,7 +6,14 @@ import { useLookups } from "@/hooks/useLookups";
 
 export type Mentions = { users: string[]; departments: string[] };
 
-type Choice = { id: string; label: string; kind: "p" | "d" };
+type Choice = {
+  id: string;
+  /** Shown in the list, with the job title to tell people apart. */
+  label: string;
+  /** Written into the comment — the bare name, so the sentence reads normally. */
+  text: string;
+  kind: "p" | "d";
+};
 
 /**
  * Comment box that names people and departments: `/p` offers people, `/d` departments.
@@ -46,14 +53,29 @@ export function AP_MentionTextarea({
 
   const options: Choice[] = trigger
     ? (trigger.kind === "p"
-        ? users.map((u) => ({ id: u.id, label: personWithTitle(u), kind: "p" as const }))
-        : departments.map((d) => ({ id: d.id, label: d.name, kind: "d" as const }))
+        ? users.map((u) => ({ id: u.id, label: personWithTitle(u), text: u.name, kind: "p" as const }))
+        : departments.map((d) => ({ id: d.id, label: d.name, text: d.name, kind: "d" as const }))
       ).filter((o) => o.label.toLowerCase().includes(trigger.query.toLowerCase()))
     : [];
 
+  // The box is also cleared from outside after a comment is posted. Without this the
+  // mentions from the one just sent stayed listed under an empty box, reading as though
+  // they were about to be emailed all over again.
+  useEffect(() => {
+    setNamed((prev) => {
+      const kept = prev.filter((c) => value.includes(`@${c.text}`));
+      if (kept.length === prev.length) return prev;
+      onMentionsChange({
+        users: kept.filter((c) => c.kind === "p").map((c) => c.id),
+        departments: kept.filter((c) => c.kind === "d").map((c) => c.id),
+      });
+      return kept;
+    });
+  }, [value, onMentionsChange]);
+
   /** Keep only the mentions whose name is still written in the text. */
   function sync(text: string, list: Choice[]) {
-    const kept = list.filter((c) => text.includes(`@${c.label}`));
+    const kept = list.filter((c) => text.includes(`@${c.text}`));
     setNamed(kept);
     onMentionsChange({
       users: kept.filter((c) => c.kind === "p").map((c) => c.id),
@@ -72,7 +94,7 @@ export function AP_MentionTextarea({
 
   function pick(choice: Choice) {
     if (!trigger) return;
-    const text = `${value.slice(0, trigger.at)}@${choice.label} ${value.slice(trigger.at + trigger.query.length + 2)}`;
+    const text = `${value.slice(0, trigger.at)}@${choice.text} ${value.slice(trigger.at + trigger.query.length + 2)}`;
     const list = named.some((c) => c.id === choice.id && c.kind === choice.kind) ? named : [...named, choice];
     onChange(text);
     sync(text, list);

@@ -233,6 +233,15 @@ in-app, because an inbox that fills with portal noise stops being read.
 Every message carries the request's `#number`, the task, its due date and estimate, and a
 link straight to it.
 
+Each one is described as the same handful of blocks — a heading, a line of explanation,
+maybe a quote, some facts, a list, a button — and **both the HTML and the plain-text part
+are rendered from that one description** (`Infrastructure/Email/layout.ts`). Writing the
+two by hand is how they drift apart, and the plain part is what phones fall back to.
+
+The HTML is deliberately old-fashioned: tables, inline styles, no stylesheet and no web
+fonts. Mail clients are not browsers — Outlook drops flexbox and grid, Gmail strips
+`<style>` blocks — so the layout has to survive on attributes a 1998 renderer understands.
+
 **A rejection goes to the author alone** — not to the person who would have owned it. They
 hear about a request when it is approved, which is the moment it becomes theirs; before
 that there is nothing of theirs to report on.

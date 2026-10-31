@@ -15,6 +15,7 @@
 import { User } from "../../Model";
 import { config } from "../../Infrastructure/Config/config";
 import { sendMail } from "../../Infrastructure/Email/mailer";
+import type { Fact } from "../../Infrastructure/Email/layout";
 
 type Ref = { toString(): string } | string | null | undefined;
 
@@ -36,20 +37,22 @@ async function taskApprovers(authorId: Ref) {
 
 const link = (number: number) => `${config.appUrl}/tasks/${number}`;
 
-const signature = "\n\n—\nTutWithUs Team Portal";
-
 /** "#12 Rebuild the pricing page" — how a request is named in every subject line. */
 const ref = (r: { number: number; title: string }) => `#${r.number} ${r.title}`;
 
 type RequestLike = { number: number; title: string };
 type TaskLike = { title: string; dueDate?: Date | null; estimateMins?: number | null };
 
-function taskDetails(task: TaskLike) {
-  const lines: string[] = [];
-  if (task.dueDate) lines.push(`Due: ${task.dueDate.toISOString().slice(0, 10)}`);
-  if (task.estimateMins) lines.push(`Estimate: ${Math.round((task.estimateMins / 60) * 100) / 100} h`);
-  return lines.length ? `\n\n${lines.join("\n")}` : "";
+/** The facts worth putting above the button: what, where, when, how long. */
+function taskFacts(task: TaskLike, request: RequestLike): Fact[] {
+  const facts: Fact[] = [{ label: "Task", value: task.title }, { label: "Request", value: ref(request) }];
+  if (task.dueDate) facts.push({ label: "Due", value: task.dueDate.toISOString().slice(0, 10) });
+  if (task.estimateMins) facts.push({ label: "Estimate", value: `${Math.round((task.estimateMins / 60) * 100) / 100} h` });
+  return facts;
 }
+
+/** Every message ends with the same way back into the portal. */
+const open = (request: RequestLike, label = "Open the request") => ({ label, url: link(request.number) });
 
 // ── Tasks raised for other people ──
 
@@ -79,15 +82,16 @@ export async function mailTaskRaised(opts: {
   await sendMail({
     to: to.map((r) => r.email),
     subject: `Approve task for ${raisedFor}: ${opts.task.title}`,
-    text:
-      `${opts.author.name} raised a task${many ? " across several departments" : ` for ${raisedFor}`} and it is waiting for your approval.\n\n` +
-      `Task: ${opts.task.title}\n` +
-      `Request: ${ref(opts.request)}` +
-      taskDetails(opts.task) +
-      (many ? `\n\nOne task each, so finishing one leaves the others open:\n${opts.parts.map((p) => `  • ${who(p)}`).join("\n")}` : "") +
-      `\n\nNothing has been posted yet — nobody has been told, and it counts towards nobody's week until you approve it.\n\n` +
-      `Approve or reject it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: "A task is waiting for your approval",
+      intro: `${opts.author.name} raised a task${many ? " across several departments" : ` for ${raisedFor}`}.`,
+      facts: taskFacts(opts.task, opts.request),
+      ...(many
+        ? { listTitle: "One task each, so finishing one leaves the others open", list: opts.parts.map((p) => ({ title: who(p) })) }
+        : {}),
+      action: open(opts.request, "Approve or reject it"),
+      note: "Nothing has been posted yet — nobody has been told, and it counts towards nobody's week until you approve it.",
+    },
   });
 }
 
@@ -103,14 +107,13 @@ export async function mailTaskApproved(opts: {
   await sendMail({
     to: to.map((r) => r.email),
     subject: `New task for you: ${opts.task.title}`,
-    text:
-      `${opts.approver.name} approved a task that has been assigned to you.\n\n` +
-      `Task: ${opts.task.title}\n` +
-      `Request: ${ref(opts.request)}` +
-      taskDetails(opts.task) +
-      `\n\nIt is now on your week and counts towards your workload.\n\n` +
-      `Open it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: "A new task is yours",
+      intro: `${opts.approver.name} approved a task that has been assigned to you.`,
+      facts: taskFacts(opts.task, opts.request),
+      action: open(opts.request, "Open the task"),
+      note: "It is now on your week and counts towards your workload.",
+    },
   });
 }
 
@@ -127,14 +130,17 @@ export async function mailTaskRejected(opts: {
   await sendMail({
     to: to.map((r) => r.email),
     subject: `Task not approved: ${opts.task.title}`,
-    text:
-      `${opts.approver.name} did not approve the task you raised.\n\n` +
-      `Task: ${opts.task.title}\n` +
-      `Request: ${ref(opts.request)}\n` +
-      `Reason: ${opts.note?.trim() || "none given"}\n\n` +
-      `Nobody was assigned it and it never became work.\n\n` +
-      `See it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: "Your task was not approved",
+      intro: `${opts.approver.name} did not approve the task you raised.`,
+      facts: [
+        { label: "Task", value: opts.task.title },
+        { label: "Request", value: ref(opts.request) },
+        { label: "Reason", value: opts.note?.trim() || "none given" },
+      ],
+      action: open(opts.request, "See the request"),
+      note: "Nobody was assigned it and it never became work.",
+    },
   });
 }
 
@@ -170,12 +176,16 @@ export async function mailMentioned(opts: {
     to: to.map((r) => r.email),
     from: actor ? { name: actor.name, email: actor.email } : undefined,
     subject: `${opts.author.name} mentioned you on ${ref(opts.request)}`,
-    text:
-      `${opts.author.name} mentioned you in a comment on ${ref(opts.request)}.\n\n` +
-      `"${opts.comment.trim()}"` +
-      taskList +
-      `\n\nOpen the request here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: `${opts.author.name} mentioned you`,
+      intro: `On ${ref(opts.request)}.`,
+      quote: opts.comment,
+      listTitle: "What this request holds right now",
+      list: opts.tasks.length
+        ? opts.tasks.map((t) => ({ title: t.title, meta: `${t.status}${t.assignee ? ` · ${t.assignee}` : ""}` }))
+        : [{ title: "No tasks on it yet" }],
+      action: open(opts.request),
+    },
   });
 }
 
@@ -210,11 +220,11 @@ export async function mailPhaseChanged(opts: {
     cc: actor?.email,
     from: actor ? { name: actor.name, email: actor.email } : undefined,
     subject: `${ref(opts.request)} — ${opts.headline}`,
-    text:
-      `${opts.actor.name} ${opts.detail}\n\n` +
-      `Request: ${ref(opts.request)}\n\n` +
-      `Open it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: `${ref(opts.request)} — ${opts.headline}`,
+      intro: `${opts.actor.name} ${opts.detail}`,
+      action: open(opts.request),
+    },
   });
 }
 
@@ -247,11 +257,15 @@ export async function mailRequestStatusChanged(opts: {
     cc: owner ? cc : undefined,
     from: actor ? { name: actor.name, email: actor.email } : undefined,
     subject: `${ref(opts.request)} — ${opts.status}`,
-    text:
-      `${opts.actor.name} changed the status of this request from ${opts.previous} to ${opts.status}.\n\n` +
-      `Request: ${ref(opts.request)}\n\n` +
-      `Open it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: `${ref(opts.request)} is now ${opts.status}`,
+      intro: `${opts.actor.name} changed the status of this request.`,
+      facts: [
+        { label: "Was", value: opts.previous },
+        { label: "Now", value: opts.status },
+      ],
+      action: open(opts.request),
+    },
   });
 }
 
@@ -269,14 +283,14 @@ export async function mailRequestRaised(opts: {
   await sendMail({
     to: to.map((r) => r.email),
     subject: `Approve request ${ref(opts.request)}`,
-    text:
-      `${opts.author.name} raised a new request and it is waiting for approval.\n\n` +
-      `${ref(opts.request)}\n` +
-      (opts.request.description ? `\n${opts.request.description}\n` : "") +
-      `\n${opts.taskCount} task(s) are attached to it.\n\n` +
-      `Until it is approved it is not work: it stays out of the workload, out of everyone's week, and its phases do not open.\n\n` +
-      `Approve or reject it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: "A new request is waiting for approval",
+      intro: `${opts.author.name} raised ${ref(opts.request)}.`,
+      ...(opts.request.description ? { quote: opts.request.description } : {}),
+      facts: [{ label: "Tasks on it", value: String(opts.taskCount) }],
+      action: open(opts.request, "Approve or reject it"),
+      note: "Until it is approved it is not work: it stays out of the workload, out of everyone's week, and its phases do not open.",
+    },
   });
 }
 
@@ -292,11 +306,12 @@ export async function mailRequestApproved(opts: {
   await sendMail({
     to: to.map((r) => r.email),
     subject: `Request approved: ${ref(opts.request)}`,
-    text:
-      `${opts.approver.name} approved ${ref(opts.request)}.\n\n` +
-      `It is now live work: its tasks count towards the week and workload, and its Acceptance phase is open.\n\n` +
-      `Open it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: "Request approved",
+      intro: `${opts.approver.name} approved ${ref(opts.request)}.`,
+      action: open(opts.request),
+      note: "It is now live work: its tasks count towards the week and workload, and its Acceptance phase is open.",
+    },
   });
 }
 
@@ -318,13 +333,12 @@ export async function mailRequestRejected(opts: {
   await sendMail({
     to: to.map((r) => r.email),
     subject: `Request not approved: ${ref(opts.request)}`,
-    text:
-      `${opts.approver.name} did not approve this request.\n\n` +
-      `${ref(opts.request)}\n` +
-      `Reason: ${opts.note?.trim() || "none given"}\n\n` +
-      `Nothing has been assigned and no work follows from it. The record is kept so the ` +
-      `decision stays visible, but it never became work.\n\n` +
-      `See it here: ${link(opts.request.number)}` +
-      signature,
+    blocks: {
+      heading: "Request not approved",
+      intro: `${opts.approver.name} did not approve ${ref(opts.request)}.`,
+      facts: [{ label: "Reason", value: opts.note?.trim() || "none given" }],
+      action: open(opts.request, "See the request"),
+      note: "Nothing has been assigned and no work follows from it. The record is kept so the decision stays visible, but it never became work.",
+    },
   });
 }
