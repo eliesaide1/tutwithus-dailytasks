@@ -58,8 +58,8 @@ export default function DoneReportScreen() {
   return (
     <div className="space-y-6">
       <AP_PageHeader
-        title={data?.everyone === false ? "What I finished" : "Done report"}
-        description={`Tasks completed ${data?.everyone === false ? "by you" : "by the team"} between ${formatShortDate(period.from)} and ${formatShortDate(period.to)} ${period.to.slice(0, 4)} (${me.timezone.split("/").pop()} time).`}
+        title="Done report"
+        description={`Everything the team completed between ${formatShortDate(period.from)} and ${formatShortDate(period.to)} ${period.to.slice(0, 4)} (${me.timezone.split("/").pop()} time).`}
         actions={
           <div className="no-print flex gap-2">
             <AP_Button variant="secondary" onClick={() => data && downloadCsv(data)} disabled={!data?.total}>
@@ -89,13 +89,11 @@ export default function DoneReportScreen() {
                 value={onTimeShare === null ? "—" : `${onTimeShare}%`}
                 hint={data.late ? `${data.late} late` : data.onTime ? "none late" : "no due dates"}
               />
-              {data.everyone && (
-                <AP_SummaryTile icon={<UsersRound className="size-5" />} label="People who delivered" value={data.byPerson.filter((p) => p.person).length} />
-              )}
+              <AP_SummaryTile icon={<UsersRound className="size-5" />} label="People who delivered" value={data.byPerson.filter((p) => p.person).length} />
             </div>
 
-            <div className={data.everyone ? "grid gap-6 lg:grid-cols-2" : "grid gap-6"}>
-              {data.everyone && <AP_DoneByPerson rows={data.byPerson} total={data.total} />}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <AP_DoneByPerson rows={data.byPerson} total={data.total} />
               <AP_DoneByProject rows={data.byProject} total={data.total} />
             </div>
 

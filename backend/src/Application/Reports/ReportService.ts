@@ -3,7 +3,6 @@ import { z } from "zod";
 import { Task, type UserDoc } from "../../Model";
 import { parse } from "../Common/validation";
 import { badRequest } from "../Common/errors";
-import { canSeeAllTasks } from "../Common/permissions";
 import { addDays, zonedToUtc } from "../Shared/time";
 
 const dateText = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD dates.");
@@ -22,9 +21,10 @@ function startOfDay(day: string, zone: string) {
  * Tasks completed from `from` to `to` (both inclusive, calendar days in the viewer's time
  * zone). "On time" = completed before the end of its due date.
  *
- * Open to everyone, because what you finished is the one piece of history you should
- * never have to ask someone else for. Outside the admins it is your own work only — the
- * same rule the task tree and My week already follow.
+ * Open to everyone, and it shows everyone: the team's delivery record is the one thing
+ * the whole team is meant to see. It is the only screen that does — the task tree, My
+ * week and the workload all narrow to the viewer — because what has already been
+ * delivered is a shared record rather than somebody's private workload.
  */
 export async function getCompletedReport(viewer: UserDoc, input: unknown) {
   const { from, to } = parse(rangeSchema, input);
@@ -34,8 +34,7 @@ export async function getCompletedReport(viewer: UserDoc, input: unknown) {
   const end = startOfDay(addDays(new Date(`${to}T00:00:00Z`), 1).toISOString().slice(0, 10), zone);
   if (end.getTime() - start.getTime() > 400 * 86_400_000) throw badRequest("Pick a period of at most about a year.");
 
-  const mine = canSeeAllTasks(viewer) ? {} : { assignee: viewer._id };
-  const tasks = (await Task.find({ ...mine, status: "DONE", "approval.status": "APPROVED", completedAt: { $gte: start, $lt: end } })
+  const tasks = (await Task.find({ status: "DONE", "approval.status": "APPROVED", completedAt: { $gte: start, $lt: end } })
     .sort({ completedAt: -1 })
     .populate("assignee", "name avatarUrl title")
     .populate({ path: "request", select: "number title project", populate: { path: "project", select: "code name color" } })
@@ -89,8 +88,6 @@ export async function getCompletedReport(viewer: UserDoc, input: unknown) {
     from,
     to,
     timezone: zone,
-    /** False when the viewer is seeing only their own completed work. */
-    everyone: canSeeAllTasks(viewer),
     total: rows.length,
     estimateMins: rows.reduce((n, r) => n + (r.estimateMins ?? 0), 0),
     onTime: rows.filter((r) => r.onTime === true).length,

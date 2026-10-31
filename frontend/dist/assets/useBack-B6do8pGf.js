@@ -1,0 +1,1 @@
+import{ad as o}from"./index-DIhg2ENx.js";function f(r){const{pathname:a,search:e}=o();return{from:a+e,fromLabel:r}}function m(){var a;const r=o().state;return(a=r==null?void 0:r.from)!=null&&a.startsWith("/")&&r.fromLabel?{from:r.from,fromLabel:r.fromLabel}:null}export{m as a,f as u};
