@@ -37,6 +37,11 @@ export async function addTask(user: UserDoc, numberParam: string, input: unknown
   // single task that was asked for. Ordered as the departments are ordered on the org
   // chart, so the copies read in a predictable order rather than however Mongo replied.
   const wanted = [...new Set(body.departments)];
+  // Raising one task across several departments commits other people's teams at once, so
+  // it stays with the admins. Anyone may still raise a single task for anyone.
+  if (wanted.length && !canManageTasks(user)) {
+    throw forbidden("Only Charbel, Elie and Gabriel can raise a task for several departments at once.");
+  }
   const departments = wanted.length ? await Department.find({ _id: { $in: wanted } }).sort({ order: 1, name: 1 }).select("name lead").lean() : [];
   if (departments.length !== wanted.length) throw badRequest("Choose valid departments.");
   const parts = departments.length

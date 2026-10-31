@@ -12,6 +12,7 @@ export const NAV: NavSection[] = [
       { href: "/my-week", label: "My week", icon: "CalendarCheck", access: "all" },
       { href: "/tasks", label: "Tasks", icon: "ListTree", access: "all" },
       { href: "/workload", label: "Workload", icon: "Gauge", access: "all" },
+      { href: "/done", label: "Done", icon: "ClipboardCheck", access: "all" },
     ],
   },
   {
@@ -27,7 +28,6 @@ export const NAV: NavSection[] = [
   {
     title: "Admin",
     items: [
-      { href: "/admin/reports", label: "Done report", icon: "ClipboardCheck", access: "admin" },
       { href: "/admin/users", label: "Users & access", icon: "ShieldCheck", access: "admin" },
       { href: "/admin/projects", label: "Projects", icon: "FolderKanban", access: "admin" },
       { href: "/admin/activity", label: "Activity log", icon: "History", access: "admin" },

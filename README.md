@@ -117,8 +117,13 @@ Availability, recurring meetings, capacity and responsibilities are loaded from 
 | Announcements | `/announcements` | Pinned team news with optional notify-all |
 | Notifications | `/notifications` | Assignment, comment and meeting notifications |
 | Emails | — | Approvals go to whoever must act; every workflow step goes to the admins, Cc'ing whoever took it. See [Emails](#emails) |
-| Done report | `/admin/reports` | Admins only: every task completed this week, last week, this month, last month or between two dates, by person and by project, with hours and on-time rate. Export to Excel (CSV) or print |
+| Done | `/done` | Every task completed this week, last week, this month, last month or between two dates, by project, with hours and on-time rate. Export to Excel (CSV) or print. **Everyone** sees their own finished work; the admins see the whole team's, broken down by person |
 | Admin | `/admin/*` | Users and access (create accounts, reset passwords, roles), projects, activity log |
+
+The task tree at `/tasks` deliberately holds only what is still to do: finished tasks are
+left out and finished requests never appear. What was delivered lives in `/done`, which is
+why that page is open to everybody rather than kept with the admin screens — what you
+finished is the one piece of history you should not have to ask someone else for.
 
 ## Approving new requests
 
@@ -180,8 +185,9 @@ unrelated field quietly dropped the person the task belonged to.
 
 ### One task, several departments
 
-Adding a task offers the departments it is for. Naming more than one raises **one task per
-department** — same title, each tagged with its department, each going to that
+Adding a task offers the departments it is for — **to the admins only**, since raising one
+task across departments commits other people's teams at once. Anyone may still raise a
+single task for anyone. Naming more than one raises **one task per department** — same title, each tagged with its department, each going to that
 department's lead, each with its own status, due date and assignee.
 
 One task they all share cannot express this, because a task has one status: Technology

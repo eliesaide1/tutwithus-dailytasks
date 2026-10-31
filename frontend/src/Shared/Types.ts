@@ -441,6 +441,8 @@ export type CompletedReport = {
   from: string;
   to: string;
   timezone: string;
+  /** False when the viewer is seeing only their own completed work. */
+  everyone: boolean;
   total: number;
   estimateMins: number;
   onTime: number;

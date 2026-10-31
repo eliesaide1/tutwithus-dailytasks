@@ -10,6 +10,7 @@ import { TASK_KEYS, useProjectTeam, useRequest } from "@/hooks/useTasks";
 import { useApiMutation } from "@/hooks/useApiMutation";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useBackTarget } from "@/hooks/useBack";
+import { useMe } from "@/hooks/useAuth";
 import { useLookups } from "@/hooks/useLookups";
 import { AP_Avatar } from "@/components/AP_Avatar";
 import { AP_Badge } from "@/components/AP_Badge";
@@ -56,6 +57,7 @@ export default function RequestScreen() {
 
 function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActivity[] }) {
   const navigate = useNavigate();
+  const me = useMe();
   const { projects, users } = useLookups();
   // Anyone may hold a task, in any department, so the picker offers everyone. Limiting it
   // to the project's team silently blanked the assignee of a cross-department task: no
@@ -191,7 +193,9 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
                       });
                     }}
                   >
-                    <AP_TaskFields people={people} allowDepartments />
+                    {/* Raising one task across departments commits other teams at once,
+                        so the picker is admin-only. The server refuses it either way. */}
+                    <AP_TaskFields people={people} allowDepartments={me.permissions.canManageTasks} />
                     <div className="mt-3">
                       <p className="mb-1.5 text-xs font-medium text-slate-500">Attachments</p>
                       <AP_Attachments taskId={null} canEdit pending={newTaskFiles} onPendingChange={setNewTaskFiles} />

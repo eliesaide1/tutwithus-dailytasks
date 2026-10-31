@@ -28,6 +28,8 @@ export const router = createBrowserRouter([
           { path: "notifications", lazy: screen(() => import("@/screens/notifications-screen/notifications-screen")) },
           { path: "announcements", lazy: screen(() => import("@/screens/announcements-screen/announcements-screen")) },
           { path: "workload", lazy: screen(() => import("@/screens/workload-screen/workload-screen")) },
+          // Everyone sees what they finished; the admins see everyone's.
+          { path: "done", lazy: screen(() => import("@/screens/done-report-screen/done-report-screen")) },
 
           // Tasks
           { path: "tasks", lazy: screen(() => import("@/screens/tasks-screen/tasks-screen")) },
@@ -70,7 +72,6 @@ export const router = createBrowserRouter([
               { path: "admin/users", lazy: screen(() => import("@/screens/admin-users-screen/admin-users-screen")) },
               { path: "admin/users/new", lazy: screen(() => import("@/screens/admin-user-new-screen/admin-user-new-screen")) },
               { path: "admin/users/:id", lazy: screen(() => import("@/screens/admin-user-screen/admin-user-screen")) },
-              { path: "admin/reports", lazy: screen(() => import("@/screens/done-report-screen/done-report-screen")) },
               { path: "admin/activity", lazy: screen(() => import("@/screens/activity-screen/activity-screen")) },
             ],
           },
