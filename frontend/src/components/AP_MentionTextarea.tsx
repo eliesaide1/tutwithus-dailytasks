@@ -111,7 +111,9 @@ export function AP_MentionTextarea({
         className="field min-h-0 resize-y"
       />
       {trigger && options.length > 0 && (
-        <ul className="absolute z-20 mt-1 max-h-56 w-full max-w-sm overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        // Opens upward: the comment box is the last thing on a request page, so a list
+        // dropping below it falls off the bottom of the window and cannot be scrolled to.
+        <ul className="absolute bottom-full z-20 mb-1 max-h-56 w-full max-w-sm overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
           {options.map((o, i) => (
             <li key={`${o.kind}-${o.id}`}>
               <button
