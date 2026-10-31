@@ -242,6 +242,25 @@ the task existed — that is the whole point of holding it pending — so tellin
 that work they never knew about has been cancelled would leak exactly what the gate
 exists to withhold.
 
+### Mentions — someone must know
+
+A comment on `/tasks/:number` names people with **`/p`** and departments with **`/d`**: a
+list appears as you type, arrow keys and Enter pick from it. Naming a department reaches
+everyone in it.
+
+What lands in the text is the plain name, so the comment reads normally to everybody,
+including in the email. The **id travels separately**, which is why somebody whose name
+happens to appear in a sentence is never mailed, and why renaming a person later cannot
+break a past mention. Editing a name back out before sending withdraws it.
+
+The email carries what the person would otherwise have to go and find — who said it, the
+comment, and **the request's tasks with their status and owner** — plus a link to the
+request. It is sent as the person who wrote the comment, so a reply reaches them. Nobody
+is emailed for naming themselves.
+
+**Being mentioned makes the request visible to you.** Without that the link in the email
+would answer `404` to the person it was sent to, which is the whole point of sending it.
+
 ### Workflow — someone must see
 
 Every step of the [three-phase workflow](#request-workflow) is emailed to **the admins** —

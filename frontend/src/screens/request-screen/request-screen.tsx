@@ -20,7 +20,7 @@ import { AP_CardHeader } from "@/components/AP_CardHeader";
 import { AP_EmptyState } from "@/components/AP_EmptyState";
 import { AP_Field } from "@/components/AP_Field";
 import { AP_QueryState } from "@/components/AP_QueryState";
-import { AP_Textarea } from "@/components/AP_Textarea";
+import { AP_MentionTextarea, type Mentions } from "@/components/AP_MentionTextarea";
 import { AP_PriorityBadge } from "@/components/AP_PriorityBadge";
 import { AP_RequestStatusBadge } from "@/components/AP_RequestStatusBadge";
 import { AP_RequestApproval } from "@/components/AP_RequestApproval";
@@ -85,8 +85,14 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
   const addTask = useApiMutation((body: Record<string, unknown>) => AddTask(r.number, body), {
     invalidate: [...TASK_KEYS],
   });
-  const comment = useApiMutation((body: string) => AddComment(r.number, body), {
+  const [commentText, setCommentText] = useState("");
+  const [mentions, setMentions] = useState<Mentions>({ users: [], departments: [] });
+  const comment = useApiMutation((body: string) => AddComment(r.number, body, mentions), {
     invalidate: [["tasks", "detail", String(r.number)], ["dashboard"]],
+    onSuccess: () => {
+      setCommentText("");
+      setMentions({ users: [], departments: [] });
+    },
   });
 
   const submit = (fn: (body: Record<string, unknown>) => void) => (e: FormEvent<HTMLFormElement>) => {
@@ -229,15 +235,22 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
               className="border-t border-slate-100 px-5 py-4"
               onSubmit={(e) => {
                 e.preventDefault();
-                const form = e.currentTarget;
-                comment.mutate(String(new FormData(form).get("body") ?? ""), { onSuccess: () => form.reset() });
+                if (commentText.trim()) comment.mutate(commentText);
               }}
             >
               <AP_Field label="Add a comment">
-                <AP_Textarea name="body" rows={2} className="min-h-0" placeholder="Updates, questions, links…" required maxLength={5000} />
+                <AP_MentionTextarea
+                  name="body"
+                  rows={2}
+                  maxLength={5000}
+                  placeholder="Updates, questions, links…"
+                  value={commentText}
+                  onChange={setCommentText}
+                  onMentionsChange={setMentions}
+                />
               </AP_Field>
               <div className="mt-2 flex justify-end">
-                <AP_Button type="submit" size="sm" disabled={comment.isPending}>
+                <AP_Button type="submit" size="sm" disabled={comment.isPending || !commentText.trim()}>
                   <MessageSquare className="size-3.5" /> {comment.isPending ? "Posting…" : "Comment"}
                 </AP_Button>
               </div>

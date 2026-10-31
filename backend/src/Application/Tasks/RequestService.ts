@@ -2,12 +2,12 @@
 import { z } from "zod";
 import { Activity, Comment, Project, Request, Task, User, nextRequestNumber, type UserDoc } from "../../Model";
 import { badRequest, forbidden, notFound } from "../Common/errors";
-import { parse } from "../Common/validation";
+import { parse, zId } from "../Common/validation";
 import { canEditRequest, canManageTasks, canSeeAllTasks, sameId } from "../Common/permissions";
 import { logActivity, notify } from "../Common/activity";
-import { mailRequestRaised, mailRequestStatusChanged } from "../Common/mail";
+import { mailMentioned, mailRequestRaised, mailRequestStatusChanged } from "../Common/mail";
 import { isId } from "../../Infrastructure/Database/database";
-import { REQUEST_STATUSES, REQUEST_STATUS_LABELS } from "../Shared/constants";
+import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, TASK_STATUS_LABELS } from "../Shared/constants";
 import { dropAttachments } from "./AttachmentCleanup";
 import { completeTasksOf } from "./TaskCompletion";
 import { approvalOnCreate, approversFor } from "./ApprovalService";
@@ -42,6 +42,9 @@ export async function requestAccess(user: UserDoc, r: { _id: unknown; project?: 
   if (canSeeAllTasks(user)) return { full: true };
   if (sameId(idOf(r.owner), user.id) || sameId(idOf(r.createdBy), user.id)) return { full: true };
   if (await Task.exists({ request: r._id, assignee: user.id })) return { full: false };
+  // Naming somebody in a comment is an invitation: the email it sends links straight
+  // here, so without this the link would answer 404 to the person it was sent to.
+  if (await Comment.exists({ request: r._id, "mentions.users": user.id })) return { full: true };
   throw notFound("Request not found");
 }
 
@@ -298,12 +301,61 @@ export async function deleteRequest(user: UserDoc, numberParam: string) {
 
 // ── Comments ──
 
+const commentInput = z.object({
+  body: z.string().trim().min(1, "Write a comment first.").max(5000, "Comment is too long."),
+  // Who was named with /p and /d. Sent as ids rather than parsed out of the text, so a
+  // person whose name appears by coincidence is never mailed.
+  mentions: z
+    .object({ users: z.array(zId).max(20).default([]), departments: z.array(zId).max(20).default([]) })
+    .optional()
+    .default({ users: [], departments: [] }),
+});
+
 export async function addComment(user: UserDoc, numberParam: string, input: unknown) {
   const r = await findRequest(numberParam);
   await requestAccess(user, r);
-  const { body } = parse(z.object({ body: z.string().trim().min(1, "Write a comment first.").max(5000, "Comment is too long.") }), input);
-  await Comment.create({ request: r._id, author: user.id, body });
+  const { body, mentions } = parse(commentInput, input);
+
+  // A named department means everybody in it. Resolved now rather than at send time, so
+  // the comment records who was actually reached.
+  const fromDepartments = mentions.departments.length
+    ? await User.find({ active: true, department: { $in: mentions.departments } }).distinct("_id")
+    : [];
+  const named = [...new Set([...mentions.users, ...fromDepartments.map(String)])].filter((id) => id !== user.id);
+  const reachable = named.length ? (await User.find({ _id: { $in: named }, active: true }).select("_id").lean()).map((u) => String(u._id)) : [];
+
+  await Comment.create({
+    request: r._id,
+    author: user.id,
+    body,
+    mentions: { users: reachable, departments: mentions.departments },
+  });
+
   const link = `/tasks/${r.number}`;
   await logActivity({ actor: user.id, entity: "Request", entityId: r.number, action: "commented", summary: `commented on #${r.number}`, link });
   await notify({ user: r.owner, actor: user.id, title: `${user.name} commented on #${r.number}`, body: body.slice(0, 140), link });
+
+  if (reachable.length) {
+    for (const id of reachable) {
+      await notify({ user: id, actor: user.id, title: `${user.name} mentioned you on #${r.number}`, body: body.slice(0, 140), link });
+    }
+    // The email carries the request's tasks, because being mentioned means you were not
+    // following this and would otherwise have to go and find them.
+    const tasks = await Task.find({ request: r._id, "approval.status": "APPROVED" })
+      .sort({ order: 1 })
+      .select("title status assignee")
+      .populate("assignee", "name")
+      .lean();
+    await mailMentioned({
+      request: r,
+      author: user,
+      comment: body,
+      tasks: tasks.map((t) => ({
+        title: t.title,
+        status: TASK_STATUS_LABELS[t.status as keyof typeof TASK_STATUS_LABELS] ?? t.status,
+        assignee: (t.assignee as Lean | null)?.name ?? null,
+      })),
+      userIds: reachable,
+    });
+  }
 }

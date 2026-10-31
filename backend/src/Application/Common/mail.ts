@@ -138,6 +138,47 @@ export async function mailTaskRejected(opts: {
   });
 }
 
+/**
+ * Somebody was named in a comment with /p or /d.
+ *
+ * The whole point of being mentioned is that you were not following this request, so the
+ * email carries what you would otherwise have to go and find: who said it, what they
+ * said, and what the request currently holds. The link lands on the request itself.
+ *
+ * A department mention reaches everyone in it; naming both a department and someone
+ * inside it still sends one email, because the recipients are resolved together.
+ */
+export async function mailMentioned(opts: {
+  request: RequestLike;
+  author: { id?: string; name: string };
+  comment: string;
+  tasks: { title: string; status: string; assignee: string | null }[];
+  userIds: Ref[];
+}) {
+  // Never email somebody about naming themselves.
+  const to = (await recipients(opts.userIds)).filter((r) => r.email);
+  if (!to.length) return;
+  const actor = (await recipients([opts.author.id]))[0];
+
+  const taskList = opts.tasks.length
+    ? `\n\nWhat this request holds right now:\n${opts.tasks
+        .map((t) => `  • ${t.title} — ${t.status}${t.assignee ? `, ${t.assignee}` : ""}`)
+        .join("\n")}`
+    : "\n\nThis request has no tasks on it yet.";
+
+  await sendMail({
+    to: to.map((r) => r.email),
+    from: actor ? { name: actor.name, email: actor.email } : undefined,
+    subject: `${opts.author.name} mentioned you on ${ref(opts.request)}`,
+    text:
+      `${opts.author.name} mentioned you in a comment on ${ref(opts.request)}.\n\n` +
+      `"${opts.comment.trim()}"` +
+      taskList +
+      `\n\nOpen the request here: ${link(opts.request.number)}` +
+      signature,
+  });
+}
+
 // ── The workflow a request moves through ──
 
 /**

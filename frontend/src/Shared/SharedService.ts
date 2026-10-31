@@ -321,7 +321,9 @@ export const DeleteAttachment = (taskId: string, fileId: string) => del<Ok>(`/ta
 /** Hand a task to someone on the project's team (admins and the request's owner). */
 export const AssignTask = (id: string, assignee: string) => post<Ok>(`/task-items/${id}/assign`, { assignee });
 
-export const AddComment = (number: number, body: string) => post<Ok>(`/tasks/${number}/comments`, { body });
+/** `mentions` names who to email — ids, not names parsed out of the text. */
+export const AddComment = (number: number, body: string, mentions?: { users: string[]; departments: string[] }) =>
+  post<Ok>(`/tasks/${number}/comments`, { body, mentions });
 
 export const GetMyWeek = (user: string, week: string) => get<MyWeek>("/my-week", { query: { user, week } });
 
