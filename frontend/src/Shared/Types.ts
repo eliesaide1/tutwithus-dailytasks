@@ -100,6 +100,8 @@ export type Workload = { weekStart: string; rows: WorkloadRow[] };
 // ───────────────────────────── Tasks ─────────────────────────────
 
 export type UserLite = { id: string; name: string; avatarUrl: string | null; title?: string };
+/** Set when a task is one department's copy of work raised across several. */
+export type DeptLite = { id: string; name: string; color: string };
 export type ProjectLite = { id: string; code: string; name: string; color: string };
 
 export type RequestSummary = {
@@ -119,7 +121,7 @@ export type RequestSummary = {
 };
 
 export type TreeRequest = RequestSummary & {
-  tasks: { id: string; title: string; status: string; dueDate: string | null; assignee: UserLite | null }[];
+  tasks: { id: string; title: string; status: string; dueDate: string | null; assignee: UserLite | null; department: DeptLite | null }[];
 };
 export type TaskTree = { scope?: "all" | "mine"; waitingInfo: number; waitingPrereq: number; requests: TreeRequest[] };
 
@@ -145,6 +147,7 @@ export type TaskItem = {
   completedAt: string | null;
   createdAt: string;
   assignee: UserLite | null;
+  department: DeptLite | null;
   approval: TaskApproval;
   attachments: Attachment[];
   canEdit: boolean; // may change the status

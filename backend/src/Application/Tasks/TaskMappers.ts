@@ -51,11 +51,13 @@ export const taskInput = z.object({
   plannedWeek: zDate.transform((d) => (d ? toMonday(d) : null)),
   blocker: zText(500),
   description: zText(5000),
+  // Raise the same task for several departments at once. Each one gets its own task.
+  departments: z.array(zId).max(10).optional().default([]),
 });
 
-/** Map validated task input to model fields. */
+/** Map validated task input to model fields. `departments` fans out into separate tasks. */
 export function taskFields(t: z.infer<typeof taskInput>) {
-  const { estimateHours, ...rest } = t;
+  const { estimateHours, departments: _departments, ...rest } = t;
   return { ...rest, estimateMins: estimateHours };
 }
 
@@ -78,6 +80,11 @@ export const idOf = (v: unknown) => (v ? String((v as Lean)._id ?? v) : null);
 export function userLite(u: Lean | null | undefined) {
   if (!u || !u._id) return null;
   return { id: String(u._id), name: u.name as string, avatarUrl: (u.avatarUrl as string) ?? null, title: (u.title as string) ?? undefined };
+}
+
+export function deptLite(d: Lean | null | undefined) {
+  if (!d || !d._id) return null;
+  return { id: String(d._id), name: d.name as string, color: (d.color as string) ?? "#64748b" };
 }
 
 export function projectLite(p: Lean | null | undefined) {
@@ -125,6 +132,7 @@ export function serializeTask(t: Lean, viewer?: Viewer) {
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt,
     assignee: userLite(t.assignee),
+    department: deptLite(t.department),
     approval: serializeTaskApproval(t, viewer),
     attachments: ((t.attachments ?? []) as Lean[]).map((a) => ({
       id: String(a._id),

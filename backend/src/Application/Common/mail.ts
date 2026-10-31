@@ -54,27 +54,38 @@ function taskDetails(task: TaskLike) {
 // ── Tasks raised for other people ──
 
 /**
- * A task has been raised for someone and is not posted yet. Only the approver is told;
- * the assignee must not learn about work that may never happen.
+ * A task has been raised and is not posted yet. Only the approver is told; the assignees
+ * must not learn about work that may never happen.
+ *
+ * Raising one task across several departments produces one task each, and one email
+ * covering all of them — an approver facing four near-identical messages reads none of
+ * them properly.
  */
 export async function mailTaskRaised(opts: {
   task: TaskLike;
   request: RequestLike;
   author: { name: string };
-  assigneeName: string | null;
   authorId: Ref;
+  /** One per task created: which department it is for, and who holds it. */
+  parts: { department: string | null; assigneeName: string | null }[];
 }) {
   const to = await taskApprovers(opts.authorId);
   if (!to.length) return;
+  const many = opts.parts.length > 1;
+  const who = (p: { department: string | null; assigneeName: string | null }) =>
+    p.department ? `${p.department} — ${p.assigneeName ?? "nobody yet"}` : (p.assigneeName ?? "nobody in particular");
+  const raisedFor = many ? `${opts.parts.length} departments` : who(opts.parts[0] ?? { department: null, assigneeName: null });
+
   await sendMail({
     to: to.map((r) => r.email),
-    subject: `Approve task for ${opts.assigneeName ?? "an unassigned slot"}: ${opts.task.title}`,
+    subject: `Approve task for ${raisedFor}: ${opts.task.title}`,
     text:
-      `${opts.author.name} raised a task for ${opts.assigneeName ?? "nobody in particular"} and it is waiting for your approval.\n\n` +
+      `${opts.author.name} raised a task${many ? " across several departments" : ` for ${raisedFor}`} and it is waiting for your approval.\n\n` +
       `Task: ${opts.task.title}\n` +
       `Request: ${ref(opts.request)}` +
       taskDetails(opts.task) +
-      `\n\nNothing has been posted yet — ${opts.assigneeName ?? "the assignee"} has not been told, and it counts towards nobody's week until you approve it.\n\n` +
+      (many ? `\n\nOne task each, so finishing one leaves the others open:\n${opts.parts.map((p) => `  • ${who(p)}`).join("\n")}` : "") +
+      `\n\nNothing has been posted yet — nobody has been told, and it counts towards nobody's week until you approve it.\n\n` +
       `Approve or reject it here: ${link(opts.request.number)}` +
       signature,
   });

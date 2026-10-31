@@ -179,15 +179,19 @@ function RequestView({ r, activity }: { r: RequestDetail; activity: RequestActiv
                       const files = newTaskFiles;
                       addTask.mutate(formValues(form), {
                         onSuccess: async (created) => {
-                          // The task only gets an id now, so its files upload here.
-                          for (const file of files) await UploadAttachment(created.id, file).catch(() => {});
+                          // The tasks only get ids now, so their files upload here. A task
+                          // raised across departments becomes one task each, and each
+                          // department needs its own copy of the brief to see it at all.
+                          for (const t of created.tasks) {
+                            for (const file of files) await UploadAttachment(t.id, file).catch(() => {});
+                          }
                           setNewTaskFiles([]);
                           form.reset();
                         },
                       });
                     }}
                   >
-                    <AP_TaskFields people={people} />
+                    <AP_TaskFields people={people} allowDepartments />
                     <div className="mt-3">
                       <p className="mb-1.5 text-xs font-medium text-slate-500">Attachments</p>
                       <AP_Attachments taskId={null} canEdit pending={newTaskFiles} onPendingChange={setNewTaskFiles} />

@@ -178,6 +178,27 @@ because of its assignee — and, worse, the edit form only offered the project's
 option matched the real assignee, the browser fell back to *Unassigned*, and saving an
 unrelated field quietly dropped the person the task belonged to.
 
+### One task, several departments
+
+Adding a task offers the departments it is for. Naming more than one raises **one task per
+department** — same title, each tagged with its department, each going to that
+department's lead, each with its own status, due date and assignee.
+
+One task they all share cannot express this, because a task has one status: Technology
+finishing would have to mean the whole thing is finished. Separate tasks make
+"Technology is done, Marketing is still working" the ordinary case, and every screen
+downstream — My week, Workload, the Done report, approval — keeps working unchanged,
+because each copy is just a task.
+
+Attachments go onto every copy, since a department that cannot see the brief cannot do
+the work. Approval covers the whole fan-out in **one** email rather than one per
+department: an approver facing four near-identical messages reads none of them.
+
+Finalizing **Delivery** is refused while any task on the request is still open. Finalizing
+closes the request and completes everything in it, so doing it early would quietly mark
+another department's unfinished work as delivered. Tasks still awaiting approval do not
+hold it up — they are not work yet.
+
 **Task approval is Gabriel's alone.** Requests take Gabriel *or* Elie; tasks take Gabriel,
 so Elie approving a task is refused. Driven by `canApproveTasks` / `skipsTaskApproval`,
 separate from the request flags, so either chain can change without touching the other.

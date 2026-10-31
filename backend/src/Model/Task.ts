@@ -29,6 +29,9 @@ const taskSchema = new Schema(
     order: { type: Number, default: 0 },
     completedAt: Date,
     request: { type: ObjectId, ref: "Request", required: true, index: true },
+    // Set when the task was raised for several departments at once: each gets its own
+    // task, carrying its own status and assignee, so one finishing leaves the rest open.
+    department: { type: ObjectId, ref: "Department", default: null },
     assignee: { type: ObjectId, ref: "User", default: null, index: true },
     createdBy: { type: ObjectId, ref: "User", default: null },
     meeting: { type: ObjectId, ref: "Meeting", default: null },

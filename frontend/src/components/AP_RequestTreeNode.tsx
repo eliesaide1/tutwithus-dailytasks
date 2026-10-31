@@ -71,6 +71,11 @@ export function AP_RequestTreeNode({
                   {t.status === "DONE" && <CircleCheck className="size-3.5 text-emerald-600" aria-label="Done" />}
                   {t.title}
                 </span>
+                {t.department && (
+                  <span className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-white" style={{ background: t.department.color }}>
+                    {t.department.name}
+                  </span>
+                )}
                 <AP_TaskStatusBadge status={t.status} />
                 {t.assignee && (
                   <span className="inline-flex items-center gap-1 text-xs text-slate-500">

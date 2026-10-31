@@ -1,6 +1,6 @@
 // Tasks inside a request: add, edit, status changes, delete.
 import { z } from "zod";
-import { Comment, Request, Task, User, type UserDoc } from "../../Model";
+import { Comment, Department, Request, Task, User, type UserDoc } from "../../Model";
 import { badRequest, forbidden, notFound } from "../Common/errors";
 import { parse, zId } from "../Common/validation";
 import { canEditRequest, canEditTask, canManageTasks, sameId } from "../Common/permissions";
@@ -20,6 +20,12 @@ import { dropAttachments } from "./AttachmentCleanup";
  * What keeps that safe is the approval step: unless the author skips it (Gabriel), the
  * task is created PENDING. A pending task is not posted — the assignee is not told, it
  * counts towards nobody's week, and it stays out of the reports until approved.
+ *
+ * Naming departments raises **one task per department** rather than one task several
+ * departments share. Each carries its own status, assignee and due date, so Technology
+ * finishing leaves Marketing's untouched — which is the whole point, and which a single
+ * task cannot express while it has one status. It also means every screen downstream
+ * keeps working: each is an ordinary task.
  */
 export async function addTask(user: UserDoc, numberParam: string, input: unknown) {
   const r = await findRequest(numberParam);
@@ -27,39 +33,63 @@ export async function addTask(user: UserDoc, numberParam: string, input: unknown
   await assertRefs({ assignees: [body.assignee] });
   const team = await getProjectTeam(String(r.project));
 
+  // One task per named department, each going to that department's lead; otherwise the
+  // single task that was asked for. Ordered as the departments are ordered on the org
+  // chart, so the copies read in a predictable order rather than however Mongo replied.
+  const wanted = [...new Set(body.departments)];
+  const departments = wanted.length ? await Department.find({ _id: { $in: wanted } }).sort({ order: 1, name: 1 }).select("name lead").lean() : [];
+  if (departments.length !== wanted.length) throw badRequest("Choose valid departments.");
+  const parts = departments.length
+    ? departments.map((d) => ({ department: String(d._id), name: d.name, assignee: d.lead ? String(d.lead) : null }))
+    : [{ department: null, name: null, assignee: body.assignee ?? team.lead?.id ?? null }];
+
   const approved = !!user.skipsTaskApproval;
   const count = await Task.countDocuments({ request: r._id });
-  // Unassigned tasks go to the project's manager, who can hand them to their team.
-  const task = await Task.create({
-    ...taskFields(body),
-    assignee: body.assignee ?? team.lead?.id ?? null,
-    request: r._id,
-    order: count,
-    createdBy: user.id,
-    approval: { status: approved ? "APPROVED" : "PENDING" },
-  });
+  const created = await Task.insertMany(
+    parts.map((p, i) => ({
+      ...taskFields(body),
+      assignee: p.assignee,
+      department: p.department,
+      request: r._id,
+      order: count + i,
+      createdBy: user.id,
+      approval: { status: approved ? "APPROVED" : "PENDING" },
+    })),
+  );
 
   const link = `/tasks/${r.number}`;
+  const across = departments.length ? ` for ${departments.map((d) => d.name).join(", ")}` : "";
   await logActivity({
     actor: user.id,
     entity: "Task",
-    entityId: task.id,
+    entityId: created[0]!.id,
     action: "created",
-    summary: `added task "${task.title}" to #${r.number}${approved ? "" : " — waiting for approval"}`,
+    summary: `added task "${body.title}"${across} to #${r.number}${approved ? "" : " — waiting for approval"}`,
     link,
   });
 
   if (approved) {
-    await notify({ user: task.assignee, actor: user.id, title: `New task assigned: ${task.title}`, body: `#${r.number} ${r.title}`, link });
-  } else {
-    // The assignee is told nothing yet; it goes to whoever approves tasks.
-    for (const a of await User.find({ active: true, canApproveTasks: true, _id: { $ne: user.id } }).select("_id").lean()) {
-      await notify({ user: a._id, actor: user.id, title: `Approve task: ${task.title}`, body: `#${r.number} ${r.title}`, link });
+    for (const t of created) {
+      await notify({ user: t.assignee, actor: user.id, title: `New task assigned: ${t.title}`, body: `#${r.number} ${r.title}`, link });
     }
-    const assignee = task.assignee ? await User.findById(task.assignee).select("name").lean() : null;
-    await mailTaskRaised({ task, request: r, author: user, assigneeName: assignee?.name ?? null, authorId: user.id });
+  } else {
+    // The assignees are told nothing yet; it goes to whoever approves tasks.
+    for (const a of await User.find({ active: true, canApproveTasks: true, _id: { $ne: user.id } }).select("_id").lean()) {
+      await notify({ user: a._id, actor: user.id, title: `Approve task: ${body.title}`, body: `#${r.number} ${r.title}`, link });
+    }
+    // One email covering the whole fan-out, not one per department.
+    const people = await User.find({ _id: { $in: created.map((t) => t.assignee).filter(Boolean) } }).select("name").lean();
+    const nameOf = new Map(people.map((u) => [String(u._id), u.name]));
+    await mailTaskRaised({
+      task: body,
+      request: r,
+      author: user,
+      authorId: user.id,
+      parts: created.map((t, i) => ({ department: parts[i]!.name, assigneeName: t.assignee ? (nameOf.get(String(t.assignee)) ?? null) : null })),
+    });
   }
-  return { id: task.id, pending: !approved };
+  // The first id keeps single-task callers working; `tasks` is what a fan-out needs.
+  return { id: created[0]!.id as string, tasks: created.map((t) => ({ id: String(t._id), title: t.title })), pending: !approved };
 }
 
 /** Gabriel decides; nobody approves a task they raised themselves. */

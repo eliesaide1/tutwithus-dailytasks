@@ -1,1 +1,0 @@
-import{j as t}from"./index-BMOO62xd.js";import{A as o}from"./AP_Tabs-XevBl_x9.js";const e=[{key:"directory",label:"Directory",to:"/people"},{key:"chart",label:"Org Chart",to:"/org-chart"}];function i({active:r}){return t.jsx(o,{active:r,items:e})}export{i as A};

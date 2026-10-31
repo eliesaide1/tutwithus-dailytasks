@@ -57,6 +57,12 @@ export function AP_TaskRow({
             {t.title}
           </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+            {/* Which department's copy this is, when the task was raised across several. */}
+            {t.department && (
+              <span className="rounded px-1.5 py-0.5 text-[11px] font-semibold text-white" style={{ background: t.department.color }}>
+                {t.department.name}
+              </span>
+            )}
             <span>{t.kind}</span>
             {quickAssign ? (
               <AP_AssigneeSelect taskId={t.id} current={t.assignee?.id ?? null} team={assignable} />

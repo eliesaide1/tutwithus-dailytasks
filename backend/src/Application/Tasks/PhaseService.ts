@@ -17,7 +17,7 @@
 // The one shortcut: a request accepted as Support finishes at acceptance — it is handled
 // with the client directly by email, so there is nothing to analyse or build.
 import { z } from "zod";
-import { Request, type UserDoc } from "../../Model";
+import { Request, Task, type UserDoc } from "../../Model";
 import { badRequest } from "../Common/errors";
 import { parse } from "../Common/validation";
 import { logActivity } from "../Common/activity";
@@ -213,6 +213,15 @@ export async function act(user: UserDoc, numberParam: string, phase: PhaseName, 
     return { ok: true };
   }
   if (action !== "finalize") throw badRequest("Delivery can be sent for review, finalized or cancelled.");
+  // Finalizing closes the request and completes everything in it, so doing it while
+  // another department is still working would mark their unfinished work as delivered.
+  // Pending tasks are excluded: they are not work yet, so they cannot hold delivery up.
+  const open = await Task.countDocuments({ request: r._id, status: { $ne: "DONE" }, "approval.status": "APPROVED" });
+  if (open) {
+    throw badRequest(
+      `${open} task(s) on this request are not done yet. Finalizing would mark them delivered — finish them, or set them done first.`,
+    );
+  }
   r.phases.development.status = "FINALIZED";
   stamp();
   r.status = "DONE";

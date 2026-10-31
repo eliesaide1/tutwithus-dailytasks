@@ -13,6 +13,7 @@ import { completeTasksOf } from "./TaskCompletion";
 import { approvalOnCreate, approversFor } from "./ApprovalService";
 import {
   USER_FIELDS,
+  deptLite,
   findRequest,
   idOf,
   requestInput,
@@ -101,8 +102,9 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
 
   const tasks = await Task.find({ request: { $in: requests.map((r) => r._id) }, ...visibleTaskFilter(user) })
     .sort({ order: 1, createdAt: 1 })
-    .select("title status dueDate assignee request order")
+    .select("title status dueDate assignee department request order")
     .populate("assignee", "name avatarUrl")
+    .populate("department", "name color")
     .lean();
   const byRequest = new Map<string, Lean[]>();
   for (const t of tasks) {
@@ -128,6 +130,7 @@ export async function listTree(user: UserDoc, q: Record<string, string | undefin
           status: t.status,
           dueDate: t.dueDate ?? null,
           assignee: userLite(t.assignee),
+          department: deptLite(t.department),
         })),
       };
     }),
@@ -203,7 +206,11 @@ export async function getRequest(user: UserDoc, numberParam: string) {
       .populate("owner", USER_FIELDS)
       .populate("createdBy", "name")
       .lean(),
-    Task.find({ request: found._id, ...visibleTaskFilter(user) }).sort({ order: 1, createdAt: 1 }).populate("assignee", "name avatarUrl").lean(),
+    Task.find({ request: found._id, ...visibleTaskFilter(user) })
+      .sort({ order: 1, createdAt: 1 })
+      .populate("assignee", "name avatarUrl")
+      .populate("department", "name color")
+      .lean(),
     Comment.find({ request: found._id }).sort({ createdAt: 1 }).populate("author", USER_FIELDS).lean(),
     Activity.find({ link: `/tasks/${found.number}` }).sort({ createdAt: -1 }).limit(25).populate("actor", "name").lean(),
   ]);

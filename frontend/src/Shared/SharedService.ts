@@ -261,7 +261,9 @@ export const UpdatePhase = (number: number, phase: PhaseName, body: Body) => pat
 export const PhaseAction = (number: number, phase: PhaseName, action: PhaseActionName) =>
   post<Ok>(`/tasks/${number}/phases/${phase}/${action}`);
 
-export const AddTask = (number: number, task: Body) => post<{ id: string; pending: boolean }>(`/tasks/${number}/tasks`, task);
+/** Naming departments raises one task per department; `tasks` lists every one created. */
+export const AddTask = (number: number, task: Body) =>
+  post<{ id: string; tasks: { id: string; title: string }[]; pending: boolean }>(`/tasks/${number}/tasks`, task);
 
 export const UpdateTask = (id: string, task: Body) => patch<Ok>(`/task-items/${id}`, task);
 
