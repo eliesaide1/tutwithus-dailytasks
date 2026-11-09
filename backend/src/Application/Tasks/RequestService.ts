@@ -5,7 +5,7 @@ import { badRequest, forbidden, notFound } from "../Common/errors";
 import { parse, zId } from "../Common/validation";
 import { canEditRequest, canManageTasks, canSeeAllTasks, sameId } from "../Common/permissions";
 import { logActivity, notify } from "../Common/activity";
-import { mailMentioned, mailRequestRaised, mailRequestStatusChanged } from "../Common/mail";
+import { mailMentioned, mailRequestRaised, mailRequestStatusChanged, mailTasksAssigned } from "../Common/mail";
 import { isId } from "../../Infrastructure/Database/database";
 import { REQUEST_STATUSES, REQUEST_STATUS_LABELS, TASK_STATUS_LABELS } from "../Shared/constants";
 import { dropAttachments } from "./AttachmentCleanup";
@@ -192,6 +192,9 @@ export async function createRequest(user: UserDoc, input: unknown) {
     for (const t of created) {
       await notify({ user: t.assignee, actor: user.id, title: `New task assigned: ${t.title}`, body: `#${number} ${request.title}`, link });
     }
+    // It opened without an approval step, so nothing later will tell the assignees. One
+    // email each, however many of the request's tasks landed on them.
+    await mailTasksAssigned({ request, author: user, tasks: created.map((t) => ({ task: t, assigneeId: t.assignee })) });
   }
   // Task ids come back in the order they were submitted, so the client can attach the
   // files it collected per row — the tasks only exist now.

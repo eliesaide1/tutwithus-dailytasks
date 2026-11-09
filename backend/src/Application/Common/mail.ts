@@ -7,6 +7,7 @@
 //   a task raised for someone  -> Gabriel, who is the only person who can approve it
 //   Gabriel approves it        -> the person it is for; this is the first they hear of it
 //   Gabriel rejects it         -> whoever raised it, with the reason
+//   a task that skips approval -> the person it landed on, straight away
 //   a request raised           -> its approvers (Gabriel or Elie)
 //   a request is decided       -> its author, and its new owner on approval
 //
@@ -20,11 +21,11 @@ import type { Fact } from "../../Infrastructure/Email/layout";
 type Ref = { toString(): string } | string | null | undefined;
 
 /** Active recipients for a set of user ids, minus anyone without a mailbox. */
-async function recipients(ids: Ref[]): Promise<{ name: string; email: string }[]> {
+async function recipients(ids: Ref[]): Promise<{ id: string; name: string; email: string }[]> {
   const unique = [...new Set(ids.filter(Boolean).map(String))];
   if (!unique.length) return [];
   const users = await User.find({ _id: { $in: unique }, active: true }).select("name email").lean();
-  return users.filter((u) => u.email).map((u) => ({ name: u.name, email: u.email }));
+  return users.filter((u) => u.email).map((u) => ({ id: String(u._id), name: u.name, email: u.email }));
 }
 
 /** Everyone who may approve tasks raised for other people, except the person who raised it. */
@@ -49,6 +50,14 @@ function taskFacts(task: TaskLike, request: RequestLike): Fact[] {
   if (task.dueDate) facts.push({ label: "Due", value: task.dueDate.toISOString().slice(0, 10) });
   if (task.estimateMins) facts.push({ label: "Estimate", value: `${Math.round((task.estimateMins / 60) * 100) / 100} h` });
   return facts;
+}
+
+/** A task's own line when somebody is told about several at once. */
+function taskMeta(task: TaskLike): string | undefined {
+  const bits: string[] = [];
+  if (task.dueDate) bits.push(`due ${task.dueDate.toISOString().slice(0, 10)}`);
+  if (task.estimateMins) bits.push(`${Math.round((task.estimateMins / 60) * 100) / 100} h`);
+  return bits.length ? bits.join(" · ") : undefined;
 }
 
 /** Every message ends with the same way back into the portal. */
@@ -115,6 +124,56 @@ export async function mailTaskApproved(opts: {
       note: "It is now on your week and counts towards your workload.",
     },
   });
+}
+
+/**
+ * A task opened already approved — raised by somebody who skips approval, or created with
+ * a request that opened straight away.
+ *
+ * There is no approval step coming to carry the news, so without this the person it landed
+ * on would only ever find out by opening the portal. Sent as whoever opened it, so a reply
+ * about work somebody has just been given reaches the person who gave it.
+ *
+ * One email per person, not per task: a request opening with three tasks for the same
+ * person is one message listing the three. Nobody is emailed about a task they raised for
+ * themselves — they already know.
+ */
+export async function mailTasksAssigned(opts: {
+  request: RequestLike;
+  author: { id?: string; name: string };
+  /** Each task that just opened, with the person it landed on. */
+  tasks: { task: TaskLike; assigneeId: Ref }[];
+}) {
+  const authorId = String(opts.author.id ?? "");
+  const byPerson = new Map<string, TaskLike[]>();
+  for (const { task, assigneeId } of opts.tasks) {
+    const id = assigneeId ? String(assigneeId) : "";
+    if (!id || id === authorId) continue;
+    byPerson.set(id, [...(byPerson.get(id) ?? []), task]);
+  }
+  if (!byPerson.size) return;
+
+  const people = await recipients([...byPerson.keys()]);
+  const actor = (await recipients([opts.author.id]))[0];
+  for (const person of people) {
+    const tasks = byPerson.get(person.id) ?? [];
+    if (!tasks.length) continue;
+    const many = tasks.length > 1;
+    await sendMail({
+      to: [person.email],
+      from: actor ? { name: actor.name, email: actor.email } : undefined,
+      subject: many ? `${tasks.length} new tasks for you on ${ref(opts.request)}` : `New task for you: ${tasks[0]!.title}`,
+      blocks: {
+        heading: many ? "New tasks are yours" : "A new task is yours",
+        intro: `${opts.author.name} opened ${many ? `${tasks.length} tasks` : "a task"} for you on ${ref(opts.request)}.`,
+        ...(many
+          ? { listTitle: "What has landed on you", list: tasks.map((t) => ({ title: t.title, meta: taskMeta(t) })) }
+          : { facts: taskFacts(tasks[0]!, opts.request) }),
+        action: open(opts.request, many ? "Open the request" : "Open the task"),
+        note: "It is on your week now and counts towards your workload.",
+      },
+    });
+  }
 }
 
 /** Rejected: only the person who raised it, with the reason they were given. */

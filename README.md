@@ -180,6 +180,14 @@ Gabriel is told **by email** as well as in the app, and on approval so is the as
 neither has to be watching the portal for work to move. See
 [Approval emails](#emails).
 
+**A task that never waits for approval is emailed to its assignee the moment it opens.**
+Gabriel raising one, or a request opening straight away with tasks on it, used to leave
+the person it landed on with an in-app notification and nothing else: the only email that
+told an assignee about their work was the one Gabriel's approval sent, and a task that
+skipped approval skipped that too. One email per person, not per task — a request opening
+with three tasks for the same person is one message listing the three — and nobody is
+emailed about a task they raised for themselves.
+
 Who may hold a task is **not** a function of the project: raising, editing and
 reassigning all accept anyone. Keeping the restriction on editing meant an existing
 cross-department task could not be saved at all — changing its due date was refused
@@ -225,6 +233,7 @@ in-app, because an inbox that fills with portal noise stops being read.
 |---|---|---|
 | A task is raised for someone | **Gabriel** | He is the only person who can approve it. The assignee is deliberately not told — the task has not been posted |
 | Gabriel approves it | **The person it is for** | This is the first they hear of it; it is now on their week and their workload |
+| A task opens without an approval step | **The person it landed on** | Raised by someone who skips approval, or created with a request that opened straight away. No approval email is coming, so this is the only one they get |
 | Gabriel rejects it | **Whoever raised it** | With the reason he gave |
 | A new request is raised | **Its approvers** (Gabriel, or Gabriel and Elie) | Same gate, one level up |
 | A request is approved | **Its author and its new owner** | It is live work now and its Acceptance phase is open |

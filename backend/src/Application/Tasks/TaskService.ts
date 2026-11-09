@@ -5,7 +5,7 @@ import { badRequest, forbidden, notFound } from "../Common/errors";
 import { parse, zId } from "../Common/validation";
 import { canEditRequest, canEditTask, canManageTasks, sameId } from "../Common/permissions";
 import { logActivity, notify } from "../Common/activity";
-import { mailTaskApproved, mailTaskRaised, mailTaskRejected } from "../Common/mail";
+import { mailTaskApproved, mailTaskRaised, mailTaskRejected, mailTasksAssigned } from "../Common/mail";
 import { isId } from "../../Infrastructure/Database/database";
 import { TASK_STATUSES, TASK_STATUS_LABELS } from "../Shared/constants";
 import { findRequest, idOf, taskFields, taskInput } from "./TaskMappers";
@@ -77,6 +77,9 @@ export async function addTask(user: UserDoc, numberParam: string, input: unknown
     for (const t of created) {
       await notify({ user: t.assignee, actor: user.id, title: `New task assigned: ${t.title}`, body: `#${r.number} ${r.title}`, link });
     }
+    // Posted on the way in, so there is no approval step coming to carry the news: the
+    // people it landed on are told now or never.
+    await mailTasksAssigned({ request: r, author: user, tasks: created.map((t) => ({ task: t, assigneeId: t.assignee })) });
   } else {
     // The assignees are told nothing yet; it goes to whoever approves tasks.
     for (const a of await User.find({ active: true, canApproveTasks: true, _id: { $ne: user.id } }).select("_id").lean()) {
