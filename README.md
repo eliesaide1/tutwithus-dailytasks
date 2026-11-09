@@ -395,8 +395,15 @@ process that serves every request — and it keeps binaries out of a free-tier A
 Storage is optional: with no `SPACES_*` variables set, the attachment endpoints answer
 `503` and the rest of the portal is unaffected.
 
-Admins and the person a task is assigned to can attach and download; removal is limited to
-admins and whoever uploaded the file. Deleting a task or request also deletes its objects.
+**Who can attach and open files:** the admins, the person the task is assigned to, and
+**whoever raised it**. The author is on that list because the files usually *are* the
+brief — the design, the spreadsheet, the screenshot of what is wrong — and raising a task
+for somebody else is open to everyone, not only to Charbel, Elie and Gabriel. Attaching is
+a separate permission from editing the task, deliberately: the person who raised it hands
+over the material, while moving the work forward stays with the person holding it.
+
+Removal is limited to admins and whoever uploaded the file. Deleting a task or request also
+deletes its objects.
 
 ### Setting up storage (DigitalOcean Spaces)
 

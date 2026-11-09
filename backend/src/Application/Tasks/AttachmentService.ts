@@ -11,7 +11,7 @@ import { z } from "zod";
 import { Request, Task, type UserDoc } from "../../Model";
 import { badRequest, forbidden, notFound, HttpError } from "../Common/errors";
 import { parse } from "../Common/validation";
-import { canEditTask, canManageTasks } from "../Common/permissions";
+import { canAttachToTask, canManageTasks } from "../Common/permissions";
 import { logActivity } from "../Common/activity";
 import { isId } from "../../Infrastructure/Database/database";
 import { config } from "../../Infrastructure/Config/config";
@@ -76,14 +76,12 @@ async function loadTask(id: string) {
   return { task, request };
 }
 
-/**
- * Who may add or remove files: admins, or the person the task is assigned to. This
- * mirrors canEditTask — if you can move a task forward, you can attach the evidence.
- */
-function assertCanAttach(user: UserDoc, task: { assignee?: unknown }) {
-  if (!canEditTask(user, { assignee: task.assignee as string | null })) {
-    throw forbidden("You can only attach files to your own tasks.");
-  }
+/** Admins, whoever holds the task, and whoever raised it — see canAttachToTask. */
+const mayAttach = (user: UserDoc, task: { assignee?: unknown; createdBy?: unknown }) =>
+  canAttachToTask(user, { assignee: task.assignee as string | null, createdBy: task.createdBy as string | null });
+
+function assertCanAttach(user: UserDoc, task: { assignee?: unknown; createdBy?: unknown }) {
+  if (!mayAttach(user, task)) throw forbidden("You can only attach files to tasks you hold or raised.");
 }
 
 export async function presign(user: UserDoc, taskId: string, input: unknown) {
@@ -152,8 +150,9 @@ export async function confirm(user: UserDoc, taskId: string, input: unknown) {
 export async function downloadUrl(user: UserDoc, taskId: string, attachmentId: string) {
   assertStorage();
   const { task } = await loadTask(taskId);
-  // Reading follows task visibility: admins, or the person it is assigned to.
-  if (!canEditTask(user, { assignee: task.assignee as unknown as string | null })) {
+  // Reading follows the same rule as attaching: otherwise whoever raised the task could
+  // upload the brief and then be refused the link to it.
+  if (!mayAttach(user, task)) {
     throw forbidden("You can't open this file.");
   }
   const a = task.attachments.find((x) => String(x._id) === attachmentId);

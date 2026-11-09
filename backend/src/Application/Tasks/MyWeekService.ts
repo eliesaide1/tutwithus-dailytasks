@@ -52,10 +52,15 @@ export async function getMyWeek(viewer: UserDoc, q: Record<string, string | unde
       : Promise.resolve([]),
   ]);
 
+  // The assignee is dropped from the row — on one person's week it is the same person on
+  // every card, and the header already names them. Dropped *after* serialising, because
+  // the permission flags are computed from it: nulling it first made every task look
+  // unassigned, which left the tick box disabled for everyone except the admins.
   const toJson = (t: Lean) => {
     const r = t.request as Lean | null;
     return {
-      ...serializeTask({ ...t, assignee: null }, viewer),
+      ...serializeTask(t, viewer),
+      assignee: null,
       request: r
         ? { number: r.number as number, title: r.title as string, project: { code: r.project?.code ?? "", color: r.project?.color ?? "#0b3b8c" } }
         : null,

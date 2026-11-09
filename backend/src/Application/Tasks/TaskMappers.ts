@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Request } from "../../Model";
 import { notFound } from "../Common/errors";
 import { zDate, zId, zRef, zText } from "../Common/validation";
-import { canEditRequest, canEditTask, canManageTasks } from "../Common/permissions";
+import { canAttachToTask, canEditRequest, canEditTask, canManageTasks } from "../Common/permissions";
 import { PRIORITIES, REQUEST_TYPES } from "../Shared/constants";
 
 const DAY_MS = 86_400_000;
@@ -142,9 +142,11 @@ export function serializeTask(t: Lean, viewer?: Viewer) {
       uploadedBy: idOf(a.uploadedBy),
       uploadedAt: a.uploadedAt ?? null,
     })),
-    // canEdit: may change the status; canManage: may edit the task's details or delete it.
+    // canEdit: may change the status; canManage: may edit the task's details or delete it;
+    // canAttach: may add and open files, which includes whoever raised the task.
     canEdit: viewer ? canEditTask(viewer, { assignee: idOf(t.assignee) }) : undefined,
     canManage: viewer ? canManageTasks(viewer) : undefined,
+    canAttach: viewer ? canAttachToTask(viewer, { assignee: idOf(t.assignee), createdBy: idOf(t.createdBy) }) : undefined,
   };
 }
 

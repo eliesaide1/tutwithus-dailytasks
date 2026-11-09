@@ -152,6 +152,7 @@ export type TaskItem = {
   attachments: Attachment[];
   canEdit: boolean; // may change the status
   canManage?: boolean; // may edit details / delete (admins only)
+  canAttach: boolean; // may add and open files: admins, the assignee, whoever raised it
 };
 
 /** One file attached to a task. The bytes live in object storage, not in MongoDB. */

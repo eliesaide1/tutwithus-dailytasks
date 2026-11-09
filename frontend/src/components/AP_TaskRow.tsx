@@ -109,10 +109,11 @@ export function AP_TaskRow({
           )}
           {t.blocker && t.status !== "DONE" && <p className="mt-1 text-xs text-red-700">Blocker: {t.blocker}</p>}
           {t.description && <p className="mt-1 text-xs whitespace-pre-wrap text-slate-600">{t.description}</p>}
-          {/* Attaching follows canEdit: admins, or whoever the task belongs to. */}
-          {(t.attachments.length > 0 || t.canEdit) && (
+          {/* Attaching is its own permission, wider than canEdit: admins, whoever holds
+              the task, and whoever raised it — the author is usually the one with the brief. */}
+          {(t.attachments.length > 0 || t.canAttach) && (
             <div className="mt-2 max-w-xl">
-              <AP_Attachments taskId={t.id} attachments={t.attachments} canEdit={t.canEdit} onChange={refresh} />
+              <AP_Attachments taskId={t.id} attachments={t.attachments} canEdit={t.canAttach} onChange={refresh} />
             </div>
           )}
         </div>

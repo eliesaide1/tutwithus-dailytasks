@@ -25,6 +25,22 @@ export function canEditTask(u: Who, task: { assignee?: Ref }) {
   return canManageTasks(u) || sameId(task.assignee, idOf(u));
 }
 
+/**
+ * Attaching a file to a task, and opening one: admins, the person the task is assigned
+ * to, and whoever raised it.
+ *
+ * The author is on the list because the files usually *are* the brief — the design, the
+ * spreadsheet, the screenshot of what is wrong. Raising a task for somebody else is open
+ * to everyone, so leaving them out meant only the three admins could attach the document
+ * the task was about, and the refusal arrived after the task had already been created.
+ *
+ * Deliberately not canEditTask: the author may hand over the material, not move the work
+ * forward. Changing a task's status stays with the person holding it and the admins.
+ */
+export function canAttachToTask(u: Who, task: { assignee?: Ref; createdBy?: Ref }) {
+  return canManageTasks(u) || sameId(task.assignee, idOf(u)) || sameId(task.createdBy, idOf(u));
+}
+
 /** Editing a request (fields, status, adding tasks, deleting) is admin-only. */
 export function canEditRequest(u: Who, _request?: unknown) {
   return canManageTasks(u);
